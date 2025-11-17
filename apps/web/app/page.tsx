@@ -176,7 +176,7 @@ export default function InterpreterPage() {
             className={styles.exampleButton}
             onClick={() => {
               setCode(
-                "MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y) {\nx + y;\nSAUF UNE FOIS AU CHALET\nputs(add(3, 4));"
+                "MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y) \nx + y;\nSAUF UNE FOIS AU CHALET\nputs(add(3, 4));"
               );
               setError("");
               setOutput("");
