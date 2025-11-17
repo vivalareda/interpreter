@@ -236,7 +236,7 @@ export default function InterpreterPage() {
 
             <h3>Retour de fonction</h3>
             <p>Utilisez <code>TOKEBEC</code> pour retourner une valeur:</p>
-            <pre>MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x) {"{"}
+            <pre>MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
               TOKEBEC x * 2;
               SAUF UNE FOIS AU CHALET
             </pre>
