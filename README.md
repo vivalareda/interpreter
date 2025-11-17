@@ -1,135 +1,115 @@
-# Turborepo starter
+# interpreter Quebecois
 
-This Turborepo starter is maintained by the Turborepo core team.
+Un interpréteur de langage de programmation écrit en TypeScript. 
 
-## Using this example
+## 🎯 Fonctionnalités
 
-Run the following command:
+### Types de Données
 
-```sh
-npx create-turbo@latest
+- **Entiers** : `5`, `42`, `-10`
+- **Booléens** : `true`, `false`
+- **Chaînes de caractères** : `"hello"`
+- **Tableaux** : `[1, 2, 3, 4]`
+- **Hashes/Dictionnaires** : `{"clé": valeur}`
+- **Fonctions** : `JAI JAMAIS TOUCHER A MES FILLES(...) SAUF UNE FOIS AU CHALET`
+
+### Syntaxe Québécoise
+
+| Concept | Québécois | Exemple |
+|---------|-----------|---------|
+| Déclaration | `MET MOI CA ICITTE` | `MET MOI CA ICITTE x = 5;` |
+| Fonction | `JAI JAMAIS TOUCHER A MES FILLES` | `JAI JAMAIS TOUCHER A MES FILLES(x) x * 2; SAUF UNE FOIS AU CHALET;` |
+| Fin fonction | `SAUF UNE FOIS AU CHALET` |                                                                      |
+| Condition | `AMETON QUE` | `AMETON QUE (x > 5) { ... }` |
+| Sinon | `SINON LA` | `SINON LA { ... }` |
+| Retour | `TOKEBEC` | `TOKEBEC x;` |
+
+### Opérateurs
+
+**Arithmétiques** : `+`, `-`, `*`, `/`
+
+**Comparaison** : `<`, `>`, `==`, `!=`
+
+**Logiques** : `!` (négation)
+
+### Fonctions Intégrées
+
+- `len(arr)` - Retourne la longueur d'un tableau ou d'une chaîne
+- `first(arr)` - Retourne le premier élément d'un tableau
+- `last(arr)` - Retourne le dernier élément d'un tableau
+- `tail(arr)` - Retourne tous les éléments sauf le premier
+- `push(arr, element)` - Ajoute un élément à la fin du tableau
+- `puts(...)` - Affiche a l'ecran
+
+## 📖 Exemples d'Utilisation
+
+### Déclarations Simples
+
+```quebz
+MET MOI CA ICITTE x = 10;
+MET MOI CA ICITTE name = "Test";
+MET MOI CA ICITTE arr = [1, 2, 3];
 ```
 
-## What's inside?
+### Fonctions
 
-This Turborepo includes the following packages/apps:
+```quebz
+MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
+  x * 2;
+SAUF UNE FOIS AU CHALET;
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+MET MOI CA ICITTE result = double(5);
+puts(result);
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Conditions
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+```quebz
+MET MOI CA ICITTE age = 25;
+AMETON QUE (age > 18) {
+  puts("Adulte");
+} SINON LA {
+  puts("Mineur");
+}
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Tableaux
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```quebz
+MET MOI CA ICITTE numbers = [1, 3, 50, 9];
+puts(len(numbers));
+puts(first(numbers));
+puts(last(numbers));
+puts(tail(numbers));
 ```
 
-### Remote Caching
+### Recursion - Map personnalisé
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+```quebz
+MET MOI CA ICITTE map = JAI JAMAIS TOUCHER A MES FILLES(arr, f)
+  MET MOI CA ICITTE iter = JAI JAMAIS TOUCHER A MES FILLES(arr, accumulated)
+    AMETON QUE (len(arr) == 0) {
+      accumulated
+    } SINON LA {
+      iter(tail(arr), push(accumulated, f(first(arr))));
+    }
+  SAUF UNE FOIS AU CHALET;
+  iter(arr, []);
+SAUF UNE FOIS AU CHALET;
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+MET MOI CA ICITTE a = [1, 3, 50, 9];
+MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
+  x * 2;
+SAUF UNE FOIS AU CHALET;
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+MET MOI CA ICITTE res = map(a, double);
+puts(res);
 ```
 
-## Useful Links
+### Hashes
 
-Learn more about the power of Turborepo:
+```quebz
+MET MOI CA ICITTE person = {"name": "Test", "age": 85};
+puts(person["name"]);
+```
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
