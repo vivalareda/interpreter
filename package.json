@@ -6,7 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "postinstall": "turbo run build --filter=@repo/interpreter-core"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
