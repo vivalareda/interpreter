@@ -153,7 +153,7 @@ export default function InterpreterPage() {
           <button
             className={styles.exampleButton}
             onClick={() => {
-              setCode('MET MOI CA ICITTE greeting = "Bonjour, Quebz!";\nputs(greeting);');
+              setCode('MET MOI CA ICITTE greeting = "Bonjour!";\nputs(greeting);');
               setError("");
               setOutput("");
             }}
