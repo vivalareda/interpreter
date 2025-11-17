@@ -1,6 +1,6 @@
-# interpreter Quebecois
+# interpreter Québecois
 
-Un interpréteur de langage de programmation écrit en TypeScript. 
+Un interpréteur écrit en TypeScript. 
 
 ## 🎯 Fonctionnalités
 
