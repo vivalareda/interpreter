@@ -1,8 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { Lexer, Parser, Eval, Environment } from "@repo/interpreter-core";
+import { Environment, Eval, Lexer, Parser } from "@repo/interpreter-core";
+import { useCallback, useState } from "react";
 import styles from "./page.module.css";
+
+const EXAMPLES = [
+  {
+    label: "Variables",
+    code: "MET MOI CA ICITTE x = 5;\nGAROCHE MOI CA(x);",
+  },
+  {
+    label: "Chaînes",
+    code: 'MET MOI CA ICITTE greeting = "Bonjour!";\nGAROCHE MOI CA(greeting);',
+  },
+  {
+    label: "Condition",
+    code: 'MET MOI CA ICITTE x = 10;\nAMETON QUE (x > 5) {\n  GAROCHE MOI CA("x est plus grand que 5");\n}',
+  },
+  {
+    label: "Fonctions",
+    code: "MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y) \n  x + y;\nSAUF UNE FOIS AU CHALET\nGAROCHE MOI CA(add(3, 4));",
+  },
+  {
+    label: "Tableaux",
+    code: "MET MOI CA ICITTE arr = [1, 2, 3, 4, 5];\nGAROCHE MOI CA(len(arr));\nGAROCHE MOI CA(first(arr));\nGAROCHE MOI CA(last(arr));",
+  },
+  {
+    label: "Récursion",
+    code: "MET MOI CA ICITTE factorial = JAI JAMAIS TOUCHER A MES FILLES(n)\n  AMETON QUE (n < 2) {\n    TOKEBEC 1;\n  } SINON LA {\n    TOKEBEC n * factorial(n - 1);\n  }\nSAUF UNE FOIS AU CHALET\nGAROCHE MOI CA(factorial(5));",
+  },
+] as const;
 
 export default function InterpreterPage() {
   const [code, setCode] = useState("");
@@ -10,22 +37,23 @@ export default function InterpreterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [activeExample, setActiveExample] = useState<number | null>(null);
 
-  const executeCode = async () => {
+  const executeCode = useCallback(async () => {
+    if (!code.trim()) return;
     setIsLoading(true);
     setOutput("");
     setError("");
 
     try {
-      // Capture console output
       const logs: string[] = [];
       const originalLog = console.log;
       const originalError = console.error;
 
-      console.log = (...args: any[]) => {
+      console.log = (...args: unknown[]) => {
         logs.push(args.map((arg) => String(arg)).join(" "));
       };
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         logs.push(args.map((arg) => String(arg)).join(" "));
       };
 
@@ -36,7 +64,8 @@ export default function InterpreterPage() {
 
         if (parser.errors.length > 0) {
           setError(
-            "Erreurs d'analyse:\n" + parser.errors.map((e) => `  ${e}`).join("\n")
+            "Erreurs d\u2019analyse:\n" +
+              parser.errors.map((e) => `  ${e}`).join("\n"),
           );
           console.log = originalLog;
           console.error = originalError;
@@ -45,41 +74,68 @@ export default function InterpreterPage() {
         }
 
         const env = new Environment();
-        const result = Eval(program, env);
+        Eval(program, env);
 
         console.log = originalLog;
         console.error = originalError;
 
-        // Only show console output, not the return value
         setOutput(logs.length > 0 ? logs.join("\n") : "(aucun résultat)");
       } catch (err) {
         console.log = originalLog;
         console.error = originalError;
         const message = err instanceof Error ? err.message : String(err);
-        setError(`Erreur d'exécution: ${message}`);
+        setError(`Erreur d\u2019exécution: ${message}`);
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [code]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
       executeCode();
     }
   };
 
+  const loadExample = (index: number) => {
+    const example = EXAMPLES[index];
+    if (!example) return;
+    setCode(example.code);
+    setActiveExample(index);
+    setError("");
+    setOutput("");
+  };
+
+  const clearAll = () => {
+    setCode("");
+    setOutput("");
+    setError("");
+    setActiveExample(null);
+  };
+
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Interpréteur Québecois</h1>
-      </div>
+      {/* Header */}
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <h1>
+            Interpréteur <span>Québecois</span>
+          </h1>
+          <p className={styles.headerSubtitle}>Playground</p>
+        </div>
+      </header>
 
-      <div className={styles.content}>
+      {/* Editor + Output */}
+      <main className={styles.content}>
         <div className={styles.editorSection}>
           <div className={styles.sectionHeader}>
-            <label htmlFor="code-input">Code</label>
-            <span className={styles.hint}>Ctrl+Entrée pour exécuter</span>
+            <div className={styles.sectionDot}>
+              <span />
+              <span />
+              <span />
+            </div>
+            <label htmlFor="code-input">code</label>
           </div>
           <textarea
             id="code-input"
@@ -87,44 +143,48 @@ export default function InterpreterPage() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`MET MOI CA ICITTE x = 5;\nputs(x);`}
+            placeholder={`MET MOI CA ICITTE x = 5;\nGAROCHE MOI CA(x);`}
             spellCheck="false"
+            autoCapitalize="off"
+            autoCorrect="off"
           />
         </div>
 
         <div className={styles.outputSection}>
           <div className={styles.sectionHeader}>
-            <label>Résultat</label>
+            <label>résultat</label>
+            <span className={styles.hint}>
+              <span className={styles.hintKey}>&#8984;</span>
+              <span className={styles.hintKey}>&#9166;</span> exécuter
+            </span>
           </div>
-          {error && (
+          {error ? (
             <pre className={styles.error}>
               <code>{error}</code>
             </pre>
-          )}
-          {!error && (
-            <pre className={styles.output}>
+          ) : (
+            <pre
+              className={`${styles.output} ${isLoading ? styles.loading : ""}`}
+            >
               <code>{output || "(aucun résultat)"}</code>
             </pre>
           )}
         </div>
-      </div>
+      </main>
 
-      <div className={styles.footer}>
+      {/* Action bar */}
+      <div className={styles.actionBar}>
         <div className={styles.buttonGroup}>
           <button
-            className={styles.button}
+            className={`${styles.button} ${styles.runButton}`}
             onClick={executeCode}
             disabled={isLoading || !code.trim()}
           >
-            {isLoading ? "Exécution..." : "Exécuter"}
+            {isLoading ? "Exécution\u2026" : "Exécuter"}
           </button>
           <button
             className={`${styles.button} ${styles.secondary}`}
-            onClick={() => {
-              setCode("");
-              setOutput("");
-              setError("");
-            }}
+            onClick={clearAll}
           >
             Effacer
           </button>
@@ -133,118 +193,127 @@ export default function InterpreterPage() {
           className={`${styles.button} ${styles.syntaxButton}`}
           onClick={() => setShowModal(true)}
         >
-          Syntaxe
+          Référence
         </button>
       </div>
 
-      <div className={styles.examples}>
-        <h2>Exemples</h2>
+      {/* Examples */}
+      <section className={styles.examples}>
+        <p className={styles.examplesLabel}>Exemples</p>
         <div className={styles.exampleGrid}>
-          <button
-            className={styles.exampleButton}
-            onClick={() => {
-              setCode("MET MOI CA ICITTE x = 5;\nputs(x);");
-              setError("");
-              setOutput("");
-            }}
-          >
-            Variables
-          </button>
-          <button
-            className={styles.exampleButton}
-            onClick={() => {
-              setCode('MET MOI CA ICITTE greeting = "Bonjour!";\nputs(greeting);');
-              setError("");
-              setOutput("");
-            }}
-          >
-            Chaînes
-          </button>
-          <button
-            className={styles.exampleButton}
-            onClick={() => {
-              setCode(
-                "MET MOI CA ICITTE x = 10;\nAMETON QUE (x > 5) {\nputs(\"x est plus grand que 5\");\n}"
-              );
-              setError("");
-              setOutput("");
-            }}
-          >
-            Condition
-          </button>
-          <button
-            className={styles.exampleButton}
-            onClick={() => {
-              setCode(
-                "MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y) \nx + y;\nSAUF UNE FOIS AU CHALET\nputs(add(3, 4));"
-              );
-              setError("");
-              setOutput("");
-            }}
-          >
-            Fonctions
-          </button>
+          {EXAMPLES.map((example, i) => (
+            <button
+              key={example.label}
+              className={`${styles.exampleButton} ${activeExample === i ? styles.exampleButtonActive : ""}`}
+              onClick={() => loadExample(i)}
+            >
+              {example.label}
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* Modal */}
-      <div className={`${styles.modalOverlay} ${showModal ? styles.open : ""}`}>
+      {/* Footer */}
+      <footer className={styles.pageFooter}>
+        <p>
+          Interpréteur Québecois &mdash; inspiré par le livre &ldquo;Writing an
+          Interpreter in Go&rdquo;
+        </p>
+      </footer>
+
+      {/* Syntax Reference Modal */}
+      <div
+        className={`${styles.modalOverlay} ${showModal ? styles.open : ""}`}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowModal(false);
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Référence syntaxique"
+      >
         <div className={styles.modal}>
           <div className={styles.modalHeader}>
-            <h2>Syntaxe</h2>
+            <h2>Référence</h2>
             <button
               className={styles.closeButton}
               onClick={() => setShowModal(false)}
+              aria-label="Fermer"
             >
-              ✕
+              &#10005;
             </button>
           </div>
           <div className={styles.modalContent}>
             <h3>Déclaration de variables</h3>
-            <p>Utilisez <code>MET MOI CA ICITTE</code> pour déclarer une variable:</p>
-            <pre>MET MOI CA ICITTE nom = valeur;</pre>
+            <p>
+              Utilisez <code>MET MOI CA ICITTE</code> pour déclarer une variable
+              :
+            </p>
+            <pre>
+              <code>MET MOI CA ICITTE nom = valeur;</code>
+            </pre>
 
             <h3>Conditions</h3>
-            <p>Utilisez <code>AMETON QUE</code> pour une condition if:</p>
-            <pre>AMETON QUE (condition) {"{"}
-              ...
-              {"}"}
+            <p>
+              Utilisez <code>AMETON QUE</code> pour une condition :
+            </p>
+            <pre>
+              <code>{`AMETON QUE (condition) {
+  ...
+}`}</code>
             </pre>
-            <p>Utilisez <code>SINON LA</code> pour else:</p>
-            <pre>AMETON QUE (condition) {"{"}
-              ...
-              {"} "}
-              SINON LA {"{"}
-              ...
-              {"}"}
+            <p>
+              Ajoutez <code>SINON LA</code> pour le else :
+            </p>
+            <pre>
+              <code>{`AMETON QUE (condition) {
+  ...
+} SINON LA {
+  ...
+}`}</code>
             </pre>
 
             <h3>Fonctions</h3>
-            <p>Déclarez une fonction avec <code>JAI JAMAIS TOUCHER A MES FILLES</code> et terminez avec <code>SAUF UNE FOIS AU CHALET</code>:</p>
-            <pre>MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y)
-              {"\n"}
-              x + y;
-              {"\n"}
-              SAUF UNE FOIS AU CHALET
+            <p>
+              Déclarez avec <code>JAI JAMAIS TOUCHER A MES FILLES</code> et
+              terminez avec <code>SAUF UNE FOIS AU CHALET</code> :
+            </p>
+            <pre>
+              <code>{`MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(x, y)
+  x + y;
+SAUF UNE FOIS AU CHALET`}</code>
+            </pre>
+
+            <h3>Retour</h3>
+            <p>
+              Utilisez <code>TOKEBEC</code> pour retourner une valeur :
+            </p>
+            <pre>
+              <code>{`MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
+  TOKEBEC x * 2;
+SAUF UNE FOIS AU CHALET`}</code>
             </pre>
 
             <h3>Affichage</h3>
-            <p>Utilisez <code>puts()</code> pour afficher des valeurs:</p>
-            <pre>puts("Bonjour");
-              puts(x);
-            </pre>
-
-            <h3>Retour de fonction</h3>
-            <p>Utilisez <code>TOKEBEC</code> pour retourner une valeur:</p>
-            <pre>MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
-              TOKEBEC x * 2;
-              SAUF UNE FOIS AU CHALET
+            <p>
+              <code>GAROCHE MOI CA()</code> affiche dans le résultat :
+            </p>
+            <pre>
+              <code>{`GAROCHE MOI CA("Bonjour");
+GAROCHE MOI CA(x);`}</code>
             </pre>
 
             <h3>Opérateurs</h3>
-            <p><code>+</code> addition, <code>-</code> soustraction, <code>*</code> multiplication, <code>/</code> division</p>
-            <p><code>==</code> égal, <code>!=</code> différent, <code>&lt;</code> plus petit, <code>&gt;</code> plus grand</p>
-            <p><code>!</code> NOT</p>
+            <p>
+              Arithmétique : <code>+</code> <code>-</code> <code>*</code>{" "}
+              <code>/</code>
+            </p>
+            <p>
+              Comparaison : <code>==</code> <code>!=</code> <code>&lt;</code>{" "}
+              <code>&gt;</code>
+            </p>
+            <p>
+              Logique : <code>!</code> (NOT)
+            </p>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 # interpreter Québecois
 
-Un interpréteur écrit en TypeScript. 
+Un interpréteur écrit en TypeScript.
 
 ## 🎯 Fonctionnalités
 
@@ -15,14 +15,15 @@ Un interpréteur écrit en TypeScript.
 
 ### Syntaxe Québécoise
 
-| Concept | Québécois | Exemple |
-|---------|-----------|---------|
-| Déclaration | `MET MOI CA ICITTE` | `MET MOI CA ICITTE x = 5;` |
-| Fonction | `JAI JAMAIS TOUCHER A MES FILLES` | `JAI JAMAIS TOUCHER A MES FILLES(x) x * 2; SAUF UNE FOIS AU CHALET;` |
-| Fin fonction | `SAUF UNE FOIS AU CHALET` |                                                                      |
-| Condition | `AMETON QUE` | `AMETON QUE (x > 5) { ... }` |
-| Sinon | `SINON LA` | `SINON LA { ... }` |
-| Retour | `TOKEBEC` | `TOKEBEC x;` |
+| Concept      | Québécois                         | Exemple                                                              |
+| ------------ | --------------------------------- | -------------------------------------------------------------------- |
+| Déclaration  | `MET MOI CA ICITTE`               | `MET MOI CA ICITTE x = 5;`                                           |
+| Fonction     | `JAI JAMAIS TOUCHER A MES FILLES` | `JAI JAMAIS TOUCHER A MES FILLES(x) x * 2; SAUF UNE FOIS AU CHALET;` |
+| Fin fonction | `SAUF UNE FOIS AU CHALET`         |                                                                      |
+| Condition    | `AMETON QUE`                      | `AMETON QUE (x > 5) { ... }`                                         |
+| Sinon        | `SINON LA`                        | `SINON LA { ... }`                                                   |
+| Retour       | `TOKEBEC`                         | `TOKEBEC x;`                                                         |
+| Affichage    | `GAROCHE MOI CA`                  | `GAROCHE MOI CA("Bonjour");`                                         |
 
 ### Opérateurs
 
@@ -39,7 +40,7 @@ Un interpréteur écrit en TypeScript.
 - `last(arr)` - Retourne le dernier élément d'un tableau
 - `tail(arr)` - Retourne tous les éléments sauf le premier
 - `push(arr, element)` - Ajoute un élément à la fin du tableau
-- `puts(...)` - Affiche a l'ecran
+- `GAROCHE MOI CA(...)` - Affiche a l'ecran
 
 ## 📖 Exemples d'Utilisation
 
@@ -59,7 +60,7 @@ MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
 SAUF UNE FOIS AU CHALET;
 
 MET MOI CA ICITTE result = double(5);
-puts(result);
+GAROCHE MOI CA(result);
 ```
 
 ### Conditions
@@ -67,9 +68,9 @@ puts(result);
 ```quebz
 MET MOI CA ICITTE age = 25;
 AMETON QUE (age > 18) {
-  puts("Adulte");
+  GAROCHE MOI CA("Adulte");
 } SINON LA {
-  puts("Mineur");
+  GAROCHE MOI CA("Mineur");
 }
 ```
 
@@ -77,10 +78,10 @@ AMETON QUE (age > 18) {
 
 ```quebz
 MET MOI CA ICITTE numbers = [1, 3, 50, 9];
-puts(len(numbers));
-puts(first(numbers));
-puts(last(numbers));
-puts(tail(numbers));
+GAROCHE MOI CA(len(numbers));
+GAROCHE MOI CA(first(numbers));
+GAROCHE MOI CA(last(numbers));
+GAROCHE MOI CA(tail(numbers));
 ```
 
 ### Recursion - Map personnalisé
@@ -103,13 +104,12 @@ MET MOI CA ICITTE double = JAI JAMAIS TOUCHER A MES FILLES(x)
 SAUF UNE FOIS AU CHALET;
 
 MET MOI CA ICITTE res = map(a, double);
-puts(res);
+GAROCHE MOI CA(res);
 ```
 
 ### Hashes
 
 ```quebz
 MET MOI CA ICITTE person = {"name": "Test", "age": 85};
-puts(person["name"]);
+GAROCHE MOI CA(person["name"]);
 ```
-

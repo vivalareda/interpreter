@@ -6,9 +6,7 @@ export class Lexer {
   private nextPosition: number;
   private currChar: string | null;
 
-  constructor(
-    public input: string,
-  ) {
+  constructor(public input: string) {
     this.currPosition = 0;
     this.nextPosition = 0;
     this.currChar = null;
@@ -17,7 +15,7 @@ export class Lexer {
 
   nextToken() {
     this.skipWhitespace();
-    let token: Token
+    let token: Token;
 
     switch (this.currChar) {
       case "=":
@@ -42,7 +40,7 @@ export class Lexer {
         const value = this.readString();
         token = { Type: TOKENS.STRING, Literal: value };
         break;
-      case ':':
+      case ":":
         token = { Type: TOKENS.COLON, Literal: this.currChar };
         break;
       case "[":
@@ -97,7 +95,7 @@ export class Lexer {
         if (this.isLetter(this.currChar)) {
           const literal = this.readIdentifier();
           const type = this.identifierType(literal);
-          token = { Type: type, Literal: literal }
+          token = { Type: type, Literal: literal };
           return token;
         } else if (this.isDigit(this.currChar)) {
           const literal = this.readNumber();
@@ -132,7 +130,7 @@ export class Lexer {
   }
 
   readIdentifier() {
-    let startingPosition = this.currPosition
+    let startingPosition = this.currPosition;
     while (this.isLetter(this.currChar)) {
       this.readChar();
     }
@@ -145,30 +143,36 @@ export class Lexer {
     } else if (ident === "MET") {
       let value = ident;
       while (value !== "MET MOI CA ICITTE") {
-        value += ` ${this.readNextWord()}`
+        value += ` ${this.readNextWord()}`;
       }
       return value;
     } else if (ident === "JAI") {
       let value = ident;
       while (value !== "JAI JAMAIS TOUCHER A MES FILLES") {
-        value += ` ${this.readNextWord()}`
+        value += ` ${this.readNextWord()}`;
       }
       return value;
     } else if (ident === "SAUF") {
       let value = ident;
       while (value !== "SAUF UNE FOIS AU CHALET") {
-        value += ` ${this.readNextWord()}`
+        value += ` ${this.readNextWord()}`;
       }
       return value;
     } else if (ident === "SINON") {
       let value = ident;
       while (value !== "SINON LA") {
-        value += ` ${this.readNextWord()}`
+        value += ` ${this.readNextWord()}`;
+      }
+      return value;
+    } else if (ident === "GAROCHE") {
+      let value = ident;
+      while (value !== "GAROCHE MOI CA") {
+        value += ` ${this.readNextWord()}`;
       }
       return value;
     }
 
-    return ident
+    return ident;
   }
 
   readNumber() {
@@ -176,7 +180,7 @@ export class Lexer {
     while (this.isDigit(this.currChar)) {
       this.readChar();
     }
-    return this.input.slice(startingPosition, this.currPosition)
+    return this.input.slice(startingPosition, this.currPosition);
   }
 
   readNextWord() {
@@ -185,7 +189,7 @@ export class Lexer {
     while (this.isLetter(this.currChar)) {
       this.readChar();
     }
-    return this.input.slice(startingPosition, this.currPosition)
+    return this.input.slice(startingPosition, this.currPosition);
   }
 
   identifierType(ident: string) {
@@ -208,7 +212,7 @@ export class Lexer {
         return TOKENS.FALSE;
       default:
         return TOKENS.IDENT;
-    };
+    }
   }
 
   readChar() {
