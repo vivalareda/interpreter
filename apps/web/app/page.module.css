@@ -187,23 +187,75 @@
 
 /* ---- Code editor textarea ---- */
 .editor {
+  position: relative;
   flex: 1;
-  padding: var(--space-md) var(--space-lg);
+  overflow: auto;
+  background: var(--bg-surface);
+}
+
+.editorTextarea,
+.editorPre,
+.editorPlaceholder {
   font-family: var(--font-mono);
   font-size: 0.875rem;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.editorTextarea,
+.editorPre {
+  min-height: 100%;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.editorTextarea {
   border: none;
   resize: none;
   outline: none;
-  color: var(--text-primary);
-  background: var(--bg-surface);
-  line-height: 1.7;
-  tab-size: 2;
+  color: transparent;
+  background: transparent;
   caret-color: var(--accent);
 }
 
-.editor::placeholder {
+.editorTextarea::selection {
+  background: rgba(212, 160, 67, 0.28);
+}
+
+.editorPlaceholder {
+  position: absolute;
+  inset: 0;
+  padding: 20px;
   color: var(--text-muted);
   opacity: 0.6;
+  pointer-events: none;
+}
+
+.editorPre {
+  color: var(--text-primary);
+}
+
+.editor :global(.token.keyword) {
+  color: #d4a043;
+}
+
+.editor :global(.token.builtin) {
+  color: #84c59a;
+}
+
+.editor :global(.token.boolean),
+.editor :global(.token.number) {
+  color: #f38ba0;
+}
+
+.editor :global(.token.operator),
+.editor :global(.token.punctuation) {
+  color: #d7d2c7;
+}
+
+.editor :global(.token.string) {
+  color: #9fd0ff;
 }
 
 /* ---- Output / Error display ---- */

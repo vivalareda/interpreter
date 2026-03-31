@@ -2,6 +2,7 @@
 
 import { Environment, Eval, Lexer, Parser } from "@repo/interpreter-core";
 import { useCallback, useState } from "react";
+import { CodeEditor } from "./code-editor";
 import styles from "./page.module.css";
 
 const EXAMPLES = [
@@ -91,7 +92,7 @@ export default function InterpreterPage() {
     }
   }, [code]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       executeCode();
@@ -137,16 +138,16 @@ export default function InterpreterPage() {
             </div>
             <label htmlFor="code-input">code</label>
           </div>
-          <textarea
+          <CodeEditor
             id="code-input"
             className={styles.editor}
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={setCode}
             onKeyDown={handleKeyDown}
             placeholder={`MET MOI CA ICITTE x = 5;\nGAROCHE MOI CA(x);`}
-            spellCheck="false"
-            autoCapitalize="off"
-            autoCorrect="off"
+            textareaClassName={styles.editorTextarea}
+            preClassName={styles.editorPre}
+            placeholderClassName={styles.editorPlaceholder}
           />
         </div>
 
