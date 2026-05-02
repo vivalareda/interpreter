@@ -1,14 +1,15 @@
+import { Token } from "../../lexer/token";
 import { Array } from "./array";
 import { Error } from "./error";
 import { Integer } from "./integer";
 import { CONSTANT_OBJECTS, OBJECTS, type Object } from "./object";
 import { String } from "./string";
 
-type BuiltinFunction = (...args: Object[]) => Object;
+type BuiltinFunction = (token: Token, ...args: Object[]) => Object;
 
-const length: BuiltinFunction = (...args: Object[]) => {
+const length: BuiltinFunction = (token, ...args) => {
   if (args.length !== 1) {
-    return new Error(`d'apres moi t'es chaud big`);
+    return new Error(`d'apres moi t'es chaud big`, token);
   }
 
   switch (args[0].Type()) {
@@ -23,14 +24,15 @@ const length: BuiltinFunction = (...args: Object[]) => {
     default: {
       return new Error(
         `d'apres moi t'es chaud big, t'essaie de faire une longueur sur ${args[0].Type()}`,
+        token,
       );
     }
   }
 };
 
-const last: BuiltinFunction = (...args: Object[]) => {
+const last: BuiltinFunction = (token, ...args) => {
   if (args.length !== 1) {
-    return new Error(`d'apres moi t'es chaud big`);
+    return new Error(`d'apres moi t'es chaud big`, token);
   }
 
   switch (args[0].Type()) {
@@ -44,12 +46,13 @@ const last: BuiltinFunction = (...args: Object[]) => {
     default: {
       return new Error(
         `d'apres moi t'es chaud big, t'essaie de faire une longueur sur ${args[0].Type()}`,
+        token,
       );
     }
   }
 };
 
-const print: BuiltinFunction = (...args: Object[]) => {
+const print: BuiltinFunction = (_, ...args: Object[]) => {
   for (const arg of args) {
     console.log(arg.Inspect());
   }
@@ -74,3 +77,4 @@ export const BUILTIN_FUCTIONS: Map<string, Builtin> = new Map([
   ["CEST LONG COMMENT", new Builtin(length)],
   ["BOUTE DU BOUTE", new Builtin(last)],
 ]);
+

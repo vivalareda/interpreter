@@ -1,8 +1,4 @@
-import {
-  CONSTANT_OBJECTS,
-  OBJECTS,
-  type Object,
-} from "./objects/object";
+import { Token } from "../lexer/token";
 import {
   ArrayLiteral,
   type Expression,
@@ -29,6 +25,7 @@ import { Environment } from "./objects/environment";
 import { Error } from "./objects/error";
 import { Function } from "./objects/function";
 import { Integer } from "./objects/integer";
+import { CONSTANT_OBJECTS, OBJECTS, type Object } from "./objects/object";
 import { ReturnValue } from "./objects/return";
 import { String } from "./objects/string";
 
@@ -73,14 +70,14 @@ export function Eval(node: Node, env: Environment): Object {
         return index;
       }
 
-      return evaluateIndexExpression(left, index);
+      return evaluateIndexExpression(left, index, node.Token);
     }
     case node instanceof PrefixExpression: {
       const right = Eval(node.Right, env);
       if (isError(right)) {
         return right;
       }
-      return evalPrefixExpression(node.Operator, right);
+      return evalPrefixExpression(node.Operator, right, node.Token);
     }
     case node instanceof LetStatement: {
       const val = Eval(node.Value, env);
@@ -101,7 +98,7 @@ export function Eval(node: Node, env: Environment): Object {
       if (isError(right)) {
         return right;
       }
-      return evalInfixExpression(left, right, node.Operator);
+      return evalInfixExpression(left, right, node.Operator, node.Token);
     }
     case node instanceof ReturnStatement: {
       const val = Eval(node.ReturnValue, env);
@@ -118,7 +115,7 @@ export function Eval(node: Node, env: Environment): Object {
       if (isError(func)) return func;
       const args = evalExpressions(node.Arguments, env);
       if (args.length === 1 && isError(args[0])) return args[0];
-      return applyFunction(func, args);
+      return applyFunction(func, args, node.Token);
     }
     default:
       return CONSTANT_OBJECTS.null;
@@ -130,6 +127,7 @@ function evalIdentifier(node: Identifier, env: Environment) {
   if (!val)
     return new Error(
       `tire toi une buche la faut qu'on parle, ${node.Name} existe pas`,
+      node.Token,
     );
 
   return val;
@@ -180,7 +178,7 @@ function unwrapReturnValue(obj: Object) {
   return obj;
 }
 
-function applyFunction(fn: Object, args: Object[]) {
+function applyFunction(fn: Object, args: Object[], token: Token) {
   switch (fn.Type()) {
     case OBJECTS.FUNCTION_OBJ: {
       const extendedEnv = extendFunctionEnv(fn as Function, args);
@@ -188,12 +186,12 @@ function applyFunction(fn: Object, args: Object[]) {
       return unwrapReturnValue(evaluated);
     }
     case OBJECTS.BUILTIN_OBJ: {
-      return (fn as Builtin).func(...args);
+      return (fn as Builtin).func(token, ...args);
     }
     default: {
       return new Error(
         `Arrete de niaise avec la puck, c'est pas une fonction ca c'est ${fn.Type()}`,
-        fn.Inspect(),
+        token,
       );
     }
   }
@@ -231,11 +229,16 @@ function evalBlockStatement(node: BlockStatement, env: Environment) {
   return result;
 }
 
-function evalInfixExpression(left: Object, right: Object, operator: string) {
+function evalInfixExpression(
+  left: Object,
+  right: Object,
+  operator: string,
+  token: Token,
+) {
   switch (true) {
     case left.Type() === OBJECTS.INTEGER_OBJ &&
       right.Type() === OBJECTS.INTEGER_OBJ: {
-      return evalIntegerInfixExpression(operator, left, right);
+      return evalIntegerInfixExpression(operator, left, right, token);
     }
     case left.Type() === OBJECTS.BOOLEAN_OBJ &&
       right.Type() === OBJECTS.BOOLEAN_OBJ: {
@@ -246,19 +249,22 @@ function evalInfixExpression(left: Object, right: Object, operator: string) {
       }
       return new Error(
         `Ca marche pas ton affaire: ${left.Type()} ${operator} ${right.Type()}`,
+        token,
       );
     }
     case left.Type() === OBJECTS.STRING_OBJ &&
       right.Type() === OBJECTS.STRING_OBJ: {
-      return evalStringInfixExpression(operator, left, right);
+      return evalStringInfixExpression(operator, left, right, token);
     }
     case left.Type() !== right.Type():
       return new Error(
         `Tu mélanges des affaires qui se mélangent pas mon pite: ${left.Type()} pis ${right.Type()}`,
+        token,
       );
     default: {
       return new Error(
         `Tu t'es tu virer une brosse en fds? ${left.Type()} ${operator} ${right.Type()}`,
+        token,
       );
     }
   }
@@ -268,6 +274,7 @@ function evalStringInfixExpression(
   operator: string,
   left: Object,
   right: Object,
+  token: Token,
 ) {
   const leftVal = (left as String).Value;
   const rightVal = (right as String).Value;
@@ -275,6 +282,7 @@ function evalStringInfixExpression(
   if (operator !== "+") {
     return new Error(
       `Ca a pas d'allure ton affaire: ${left.Type()} ${operator} ${right.Type()}`,
+      token,
     );
   }
 
@@ -285,6 +293,7 @@ function evalIntegerInfixExpression(
   operator: string,
   left: Object,
   right: Object,
+  token: Token,
 ) {
   const leftVal = (left as Integer).Value;
   const rightVal = (right as Integer).Value;
@@ -298,7 +307,7 @@ function evalIntegerInfixExpression(
     }
     case "/": {
       if (rightVal === 0) {
-        return new Error("Esti de tawin qui essaye de diviser par zero");
+        return new Error("Esti de tawin qui essaye de diviser par zero", token);
       }
       return new Integer(leftVal / rightVal);
     }
@@ -318,49 +327,55 @@ function evalIntegerInfixExpression(
       return nativeBoolToBooleanObject(leftVal !== rightVal);
     }
     default: {
-      return new Error(`Ca marche pus ton affaire: ${operator}`);
+      return new Error(`Ca marche pus ton affaire: ${operator}`, token);
     }
   }
 }
 
-function evalPrefixExpression(operator: string, value: Object) {
+function evalPrefixExpression(operator: string, value: Object, token: Token) {
   switch (operator) {
     case "!":
       return evalBangOperatorExpression(value);
     case "-":
-      return evalMinusPrefixOperatorExpression(value);
+      return evalMinusPrefixOperatorExpression(value, token);
     default:
-      return new Error(`C'est quoi stafaire la: ${operator} ${value.Type()}`);
+      return new Error(
+        `C'est quoi stafaire la: ${operator} ${value.Type()}`,
+        token,
+      );
   }
 }
 
-function evalMinusPrefixOperatorExpression(value: Object) {
+function evalMinusPrefixOperatorExpression(value: Object, token: Token) {
   if (value === CONSTANT_OBJECTS.null) {
-    return new Error("Y'a rien là mon chum");
+    return new Error("Y'a rien là mon chum", token);
   }
   if (value.Type() !== OBJECTS.INTEGER_OBJ) {
-    return new Error(`C'est quoi stafaire la: -${value.Type()}`);
+    return new Error(`C'est quoi stafaire la: -${value.Type()}`, token);
   }
 
   return new Integer(-(value as Integer).Value);
 }
 
-function evaluateIndexExpression(left: Object, index: Object) {
+function evaluateIndexExpression(left: Object, index: Object, token: Token) {
   if (left.Type() !== OBJECTS.ARRAY_OBJ) {
-    return new Error(`c'est pas un array ca mon chum: ${left.Type()}`);
+    return new Error(`c'est pas un array ca mon chum: ${left.Type()}`, token);
   } else if (index.Type() !== OBJECTS.INTEGER_OBJ) {
-    return new Error(`va me falloir un integer mon chum pas ${index.Type()}`);
+    return new Error(
+      `va me falloir un integer mon chum pas ${index.Type()}`,
+      token,
+    );
   }
 
-  return evalArrayIndexExpression(left, index);
+  return evalArrayIndexExpression(left, index, token);
 }
 
-function evalArrayIndexExpression(left: Object, index: Object) {
+function evalArrayIndexExpression(left: Object, index: Object, token: Token) {
   const array = left as Array;
   const indexValue = (index as Integer).Value;
 
   if (indexValue === 0) {
-    return new Error("Ca marche pas dmeme icitte");
+    return new Error("Ca marche pas dmeme icitte", token);
   }
 
   if (indexValue < 0 || indexValue > array.Elements.length) {

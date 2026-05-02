@@ -1,5 +1,11 @@
-import { Eval, Environment, InterpreterError as EvaluatorError, Lexer, Parser } from "@repo/interpreter-core";
-import { type Token } from "@repo/interpreter-core";
+import {
+  Environment,
+  Eval,
+  InterpreterError as EvaluatorError,
+  Lexer,
+  Parser,
+  type Token,
+} from "@repo/interpreter-core";
 import type {
   Diagnostic,
   Message,
@@ -169,10 +175,7 @@ function validate(uri: string, version?: number) {
         const result = Eval(stmt, env);
         if (result instanceof EvaluatorError) {
           diagnostics.push({
-            range: {
-              start: { line: 0, character: 0 },
-              end: { line: 0, character: 0 },
-            },
+            range: tokenToRange(result.Token),
             severity: 1,
             message: result.Message,
           });
@@ -213,3 +216,4 @@ function tokenToRange(token: Token) {
     end: { line, character: startChar + token.Literal.length },
   };
 }
+

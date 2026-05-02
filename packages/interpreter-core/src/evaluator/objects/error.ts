@@ -1,9 +1,10 @@
+import type { Token } from "../../lexer/token";
 import { OBJECTS, type Object } from "./object";
 
 export class Error implements Object {
   constructor(
     public Message: string,
-    public Snippet?: string,
+    public Token: Token,
   ) {}
 
   Type() {
@@ -11,8 +12,7 @@ export class Error implements Object {
   }
 
   Inspect() {
-    return this.Snippet
-      ? `ERROR ${this.Snippet}: ${this.Message}`
-      : `ERROR ${this.Message}`;
+    return `ERROR ${this.Message}`;
   }
 }
+

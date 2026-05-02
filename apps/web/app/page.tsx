@@ -1,8 +1,20 @@
 "use client";
 
-import { Environment, Eval, InterpreterError, Lexer, Parser, BUILTIN_FUCTIONS } from "@repo/interpreter-core";
-import { useCallback, useState } from "react";
-import { CodeEditor, type Theme, themes } from "./code-editor";
+import {
+  BUILTIN_FUCTIONS,
+  Environment,
+  Eval,
+  InterpreterError,
+  Lexer,
+  Parser,
+} from "@repo/interpreter-core";
+import { useCallback, useMemo, useState } from "react";
+import {
+  CodeEditor,
+  type EditorDiagnostic,
+  type Theme,
+  themes,
+} from "./code-editor";
 import styles from "./page.module.css";
 
 const EXAMPLES = [
@@ -30,7 +42,90 @@ const EXAMPLES = [
     label: "Récursion",
     code: "MET MOI CA ICITTE factorial = JAI JAMAIS TOUCHER A MES FILLES(n)\n  AMETON QUE (n < 2) {\n    TOKEBEC 1;\n  } SINON LA {\n    TOKEBEC n * factorial(n - 1);\n  }\nSAUF UNE FOIS AU CHALET\nGAROCHE MOI CA(factorial(5));",
   },
+  {
+    label: "Erreurs",
+    code: `TYL Chaque ligne produit un message d'erreur different
+MET MOI CA ICITTE x = 5;
+TYL 1. Appeler un entier comme une fonction
+x();
+
+TYL 2. Variable inexistante
+GAROCHE MOI CA(inexistant);
+
+TYL 3. Mauvais nombre d'arguments
+CEST LONG COMMENT();
+
+TYL 4. Longueur sur un entier
+CEST LONG COMMENT(42);
+
+TYL 5. Opération entre types incompatibles
+"hello" - "world";
+
+TYL 6. Division par zéro
+10 / 0;
+
+TYL 7. Index sur un non-tableau
+42[1];
+
+TYL 8. Index avec un non-entier
+MET MOI CA ICITTE arr = [1, 2];
+arr["a"];
+
+TYL 9. Index à zéro (interdit)
+arr[0];
+
+TYL 10. Négation d'un non-entier
+-"hello";
+
+TYL 11. Même type non-supporté
+[1] + [2];`,
+  },
 ] as const;
+
+function computeDiagnostics(code: string): EditorDiagnostic[] {
+  if (!code.trim()) return [];
+
+  try {
+    const lexer = new Lexer(code);
+    const parser = new Parser(lexer);
+    const program = parser.parseProgram();
+
+    const diagnostics: EditorDiagnostic[] = parser.errors.map((err) => ({
+      line: err.token.Line,
+      column: err.token.Column,
+      length: err.token.Literal.length,
+      message: err.message,
+    }));
+
+    if (parser.errors.length === 0) {
+      const env = new Environment();
+      const origLog = console.log;
+      const origError = console.error;
+      console.log = () => {};
+      console.error = () => {};
+      try {
+        for (const stmt of program.statements) {
+          const result = Eval(stmt, env);
+          if (result instanceof InterpreterError) {
+            diagnostics.push({
+              line: result.Token.Line,
+              column: result.Token.Column,
+              length: result.Token.Literal.length,
+              message: result.Message,
+            });
+          }
+        }
+      } finally {
+        console.log = origLog;
+        console.error = origError;
+      }
+    }
+
+    return diagnostics;
+  } catch {
+    return [];
+  }
+}
 
 export default function InterpreterPage() {
   const [code, setCode] = useState("");
@@ -38,8 +133,11 @@ export default function InterpreterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showErrorsModal, setShowErrorsModal] = useState(false);
   const [activeExample, setActiveExample] = useState<number | null>(null);
   const [theme, setTheme] = useState<Theme>("forest");
+
+  const diagnostics = useMemo(() => computeDiagnostics(code), [code]);
 
   const executeCode = useCallback(async () => {
     if (!code.trim()) return;
@@ -76,10 +174,16 @@ export default function InterpreterPage() {
         }
 
         const env = new Environment();
-        Eval(program, env);
+        const result = Eval(program, env);
 
         console.log = originalLog;
         console.error = originalError;
+
+        if (result instanceof InterpreterError) {
+          setError(result.Message);
+          setIsLoading(false);
+          return;
+        }
 
         setOutput(logs.length > 0 ? logs.join("\n") : "(aucun résultat)");
       } catch (err) {
@@ -167,6 +271,7 @@ export default function InterpreterPage() {
             onKeyDown={handleKeyDown}
             className={styles.editor}
             theme={theme}
+            diagnostics={diagnostics}
           />
         </div>
 
@@ -320,10 +425,12 @@ GAROCHE MOI CA(x);`}</code>
 
             <h3>Fonctions intégrées</h3>
             <p>
-              <code>CEST LONG COMMENT(x)</code> — longueur d&apos;une chaîne ou tableau
+              <code>CEST LONG COMMENT(x)</code> — longueur d&apos;une chaîne ou
+              tableau
             </p>
             <p>
-              <code>BOUTE DU BOUTE(arr)</code> — dernier élément d&apos;un tableau
+              <code>BOUTE DU BOUTE(arr)</code> — dernier élément d&apos;un
+              tableau
             </p>
 
             <h3>Opérateurs</h3>

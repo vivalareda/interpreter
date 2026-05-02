@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
 import { StreamLanguage, syntaxHighlighting, defaultHighlightStyle, HighlightStyle, indentOnInput, foldGutter, bracketMatching } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
+import { linter, forceLinting, type Diagnostic as CMDiagnostic } from "@codemirror/lint";
 
 type Theme = "forest" | "ocean" | "light";
 
@@ -127,6 +128,37 @@ function createEditorTheme(theme: Theme) {
     ".cm-scroller": {
       overflow: "auto",
     },
+    ".cm-diagnostic": {
+      backgroundColor: t.bgElevated,
+      color: t.text,
+      borderLeft: `3px solid ${t.accent}`,
+    },
+    ".cm-diagnosticText": {
+      color: t.text,
+    },
+    ".cm-diagnosticAction": {
+      color: t.accent,
+    },
+    ".cm-tooltip.cm-tooltip-lint": {
+      backgroundColor: t.bgElevated,
+      color: t.text,
+      border: `1px solid ${t.border}`,
+      borderRadius: "6px",
+      boxShadow: `0 4px 12px ${t.border}`,
+    },
+    ".cm-lintRange-error": {
+      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 3L3 0 6 3' fill='none' stroke='%23${t.accent.replace("#", "")}' stroke-width='1.2'/%3E%3C/svg%3E")`,
+      backgroundPosition: "left bottom",
+      backgroundRepeat: "repeat-x",
+    },
+    ".cm-panel.cm-panel-lint": {
+      backgroundColor: t.bgSurface,
+      color: t.text,
+      borderTop: `1px solid ${t.border}`,
+    },
+    ".cm-panel.cm-panel-lint ul li:hover": {
+      backgroundColor: t.bgElevated,
+    },
   });
 }
 
@@ -244,12 +276,20 @@ const joualLanguage = StreamLanguage.define({
   },
 });
 
+export type EditorDiagnostic = {
+  line: number;
+  column: number;
+  length: number;
+  message: string;
+};
+
 type CodeEditorProps = {
   value: string;
   onChange: (value: string) => void;
   onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   className?: string;
   theme?: Theme;
+  diagnostics?: EditorDiagnostic[];
 };
 
 export function CodeEditor({
@@ -258,10 +298,12 @@ export function CodeEditor({
   onKeyDown,
   className,
   theme = "forest",
+  diagnostics = [],
 }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const diagnosticsRef = useRef<CMDiagnostic[]>([]);
   onChangeRef.current = onChange;
 
   useEffect(() => {
@@ -290,6 +332,7 @@ export function CodeEditor({
         syntaxHighlighting(highlightStyle),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         editorTheme,
+        linter(() => diagnosticsRef.current),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
@@ -322,6 +365,27 @@ export function CodeEditor({
       });
     }
   }, [value]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const doc = view.state.doc;
+    const cmDiagnostics: CMDiagnostic[] = diagnostics.map((d) => {
+      const line = doc.line(Math.max(1, Math.min(d.line, doc.lines)));
+      const from = line.from + Math.max(0, d.column - 1);
+      const to = from + d.length;
+      return {
+        from,
+        to: Math.min(to, line.to),
+        message: d.message,
+        severity: "error",
+      };
+    });
+
+    diagnosticsRef.current = cmDiagnostics;
+    forceLinting(view);
+  }, [diagnostics]);
 
   useEffect(() => {
     if (!onKeyDown) return;
