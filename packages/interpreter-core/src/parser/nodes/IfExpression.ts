@@ -1,6 +1,6 @@
-import type { Statement } from "../ast.js";
-import type { Expression } from "../ast.js";
-import { type Token } from "../../lexer/token.js";
+import type { Statement } from "../ast";
+import type { Expression } from "../ast";
+import { type Token } from "../../lexer/token";
 
 export class IfExpression implements Expression {
   expressionNode = true as const;

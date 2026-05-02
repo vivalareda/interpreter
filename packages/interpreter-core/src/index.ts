@@ -1,9 +1,7 @@
-// Lexer exports
-export { Lexer } from "./lexer/lexer.js";
-export { TOKENS, type Token, type TokenType } from "./lexer/token.js";
+export { Lexer } from "./lexer/lexer";
+export { TOKENS, type Token, type TokenType } from "./lexer/token";
 
-// Parser exports
-export { Parser } from "./parser/parser.js";
+export { Parser, type ParseError } from "./parser/parser";
 export {
   Program,
   Identifier,
@@ -14,30 +12,27 @@ export {
   type Node,
   type Statement,
   type Expression,
-} from "./parser/ast.js";
+} from "./parser/ast";
 
-// Parser node exports
-export { IntegerLiteral } from "./parser/nodes/IntegerLiteral.js";
-export { StringLiteral } from "./parser/nodes/StringLiteral.js";
-export { ArrayLiteral } from "./parser/nodes/ArrayLiteral.js";
-export { HashLiteral, type KeyValuePair } from "./parser/nodes/HashLiteral.js";
-export { BooleanLiteral } from "./parser/nodes/BooleanExpression.js";
-export { IfExpression, BlockStatement } from "./parser/nodes/IfExpression.js";
-export { FunctionLiteral } from "./parser/nodes/FunctionLiteral.js";
-export { FunctionCallExpression } from "./parser/nodes/CallExpression.js";
-export { InfixExpression } from "./parser/nodes/InfixExpression.js";
-export { IndexExpression } from "./parser/nodes/IndexExpression.js";
+export { IntegerLiteral } from "./parser/nodes/IntegerLiteral";
+export { StringLiteral } from "./parser/nodes/StringLiteral";
+export { ArrayLiteral } from "./parser/nodes/ArrayLiteral";
+export { BooleanLiteral } from "./parser/nodes/BooleanExpression";
+export { IfExpression, BlockStatement } from "./parser/nodes/IfExpression";
+export { FunctionLiteral } from "./parser/nodes/FunctionLiteral";
+export { FunctionCallExpression } from "./parser/nodes/CallExpression";
+export { InfixExpression } from "./parser/nodes/InfixExpression";
+export { IndexExpression } from "./parser/nodes/IndexExpression";
 
-// Evaluator exports
-export { Eval, OBJ } from "./evaluator/evaluator.js";
-export { Environment } from "./evaluator/environment.js";
-export { type Object, OBJECTS, type Hashable, ReturnValue } from "./evaluator/object.js";
-export { Integer } from "./evaluator/integer.js";
-export { String } from "./evaluator/string.js";
-export { Boolean } from "./evaluator/boolean.js";
-export { Null } from "./evaluator/null.js";
-export { Array as InterpreterArray } from "./evaluator/array.js";
-export { Hash } from "./evaluator/hash.js";
-export { Error as InterpreterError } from "./evaluator/error.js";
-export { Function } from "./evaluator/function.js";
-export { Builtin, BUILTINS } from "./evaluator/builtin.js";
+export { Eval } from "./evaluator/evaluator";
+export { Environment } from "./evaluator/objects/environment";
+export { type Object, OBJECTS, CONSTANT_OBJECTS } from "./evaluator/objects/object";
+export { ReturnValue } from "./evaluator/objects/return";
+export { Integer } from "./evaluator/objects/integer";
+export { String } from "./evaluator/objects/string";
+export { Boolean } from "./evaluator/objects/boolean";
+export { Null } from "./evaluator/objects/null";
+export { Array as InterpreterArray } from "./evaluator/objects/array";
+export { Error as InterpreterError } from "./evaluator/objects/error";
+export { Function } from "./evaluator/objects/function";
+export { Builtin, BUILTIN_FUCTIONS } from "./evaluator/objects/builtin";

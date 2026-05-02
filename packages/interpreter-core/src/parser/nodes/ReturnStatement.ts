@@ -1,6 +1,5 @@
-import type { Token } from "../../lexer/token.js";
-import type { Statement, Expression } from "../ast.js";
-
+import type { Token } from "../../lexer/token";
+import type { Statement, Expression } from "../ast";
 
 export class ReturnStatement implements Statement {
   statementNode = true as const;

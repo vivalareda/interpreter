@@ -1,6 +1,6 @@
-import { describe, expect, it } from "bun:test.js";
-import { Lexer } from "./lexer.js";
-import { TOKENS, type TokenType } from "./token.js";
+import { describe, expect, it } from "bun:test";
+import { Lexer } from "./lexer";
+import { TOKENS, type TokenType } from "./token";
 
 describe("lexer", () => {
   it("should lex symbols correctly", () => {
@@ -44,7 +44,10 @@ SAUF UNE FOIS AU CHALET
 `;
 
     const tests = [
-      { expectedType: TOKENS.DECLARATION, expectedLiteral: "MET MOI CA ICITTE" },
+      {
+        expectedType: TOKENS.DECLARATION,
+        expectedLiteral: "MET MOI CA ICITTE",
+      },
       { expectedType: TOKENS.IDENT, expectedLiteral: "five" },
       { expectedType: TOKENS.ASSIGN, expectedLiteral: "=" },
       { expectedType: TOKENS.INT, expectedLiteral: "5" },
@@ -66,10 +69,16 @@ SAUF UNE FOIS AU CHALET
       { expectedType: TOKENS.FALSE, expectedLiteral: "false" },
       { expectedType: TOKENS.SEMICOLON, expectedLiteral: ";" },
       { expectedType: TOKENS.RBRACE, expectedLiteral: "}" },
-      { expectedType: TOKENS.DECLARATION, expectedLiteral: "MET MOI CA ICITTE" },
+      {
+        expectedType: TOKENS.DECLARATION,
+        expectedLiteral: "MET MOI CA ICITTE",
+      },
       { expectedType: TOKENS.IDENT, expectedLiteral: "add" },
       { expectedType: TOKENS.ASSIGN, expectedLiteral: "=" },
-      { expectedType: TOKENS.FNSTART, expectedLiteral: "JAI JAMAIS TOUCHER A MES FILLES" },
+      {
+        expectedType: TOKENS.FNSTART,
+        expectedLiteral: "JAI JAMAIS TOUCHER A MES FILLES",
+      },
       { expectedType: TOKENS.LPAREN, expectedLiteral: "(" },
       { expectedType: TOKENS.IDENT, expectedLiteral: "a" },
       { expectedType: TOKENS.COMMA, expectedLiteral: "," },
@@ -80,7 +89,10 @@ SAUF UNE FOIS AU CHALET
       { expectedType: TOKENS.PLUS, expectedLiteral: "+" },
       { expectedType: TOKENS.IDENT, expectedLiteral: "b" },
       { expectedType: TOKENS.SEMICOLON, expectedLiteral: ";" },
-      { expectedType: TOKENS.FNEND, expectedLiteral: "SAUF UNE FOIS AU CHALET" },
+      {
+        expectedType: TOKENS.FNEND,
+        expectedLiteral: "SAUF UNE FOIS AU CHALET",
+      },
       { expectedType: TOKENS.BANG, expectedLiteral: "!" },
       { expectedType: TOKENS.MINUS, expectedLiteral: "-" },
       { expectedType: TOKENS.SLASH, expectedLiteral: "/" },

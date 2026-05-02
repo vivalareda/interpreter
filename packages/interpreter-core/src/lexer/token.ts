@@ -1,9 +1,11 @@
 export type Token = {
-  Type: TokenType,
-  Literal: string,
-}
+  Type: TokenType;
+  Literal: string;
+  Line: number;
+  Column: number;
+};
 
-export type TokenType = (typeof TOKENS)[keyof typeof TOKENS]
+export type TokenType = (typeof TOKENS)[keyof typeof TOKENS];
 
 export const TOKENS = {
   ASSIGN: "=",
@@ -40,8 +42,7 @@ export const TOKENS = {
   RBRACKET: "]",
   LBRACKET: "[",
   COLON: ":",
+  COMMENT: "TYL",
 
-  ILLEGAL: "ILLEGAL"
+  ILLEGAL: "ILLEGAL",
 } as const;
-
-

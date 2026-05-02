@@ -1,6 +1,8 @@
 {
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
+    "strict": false,
+    "noUncheckedIndexedAccess": false,
     "plugins": [
       {
         "name": "next"

@@ -1,29 +1,34 @@
-import { describe, expect, test } from "bun:test.js";
-import { Lexer } from "../lexer/lexer.js";
-import { Parser } from "../parser/parser.js";
-import { type Expression, ExpressionStatement, Identifier, LetStatement, ReturnStatement, PrefixExpression } from "../parser/ast.js";
-import { IntegerLiteral } from "./nodes/IntegerLiteral.js";
-import { InfixExpression } from "./nodes/InfixExpression.js";
-import { BooleanLiteral } from "./nodes/BooleanExpression.js";
-import { BlockStatement, IfExpression } from "./nodes/IfExpression.js";
-import { FunctionLiteral } from "./nodes/FunctionLiteral.js";
-import { FunctionCallExpression } from "./nodes/CallExpression.js";
-import { StringLiteral } from "./nodes/StringLiteral.js";
-import { ArrayLiteral } from "./nodes/ArrayLiteral.js";
-import type { IndexExpression } from "./nodes/IndexExpression.js";
-import { HashLiteral } from "./nodes/HashLiteral.js";
+import { describe, expect, test } from "bun:test";
+import { Lexer } from "../lexer/lexer";
+import {
+  type Expression,
+  ExpressionStatement,
+  Identifier,
+  LetStatement,
+  PrefixExpression,
+  ReturnStatement,
+} from "./ast";
+import { Parser } from "./parser";
+import { ArrayLiteral } from "./nodes/ArrayLiteral";
+import { BooleanLiteral } from "./nodes/BooleanExpression";
+import { FunctionCallExpression } from "./nodes/CallExpression";
+import { FunctionLiteral } from "./nodes/FunctionLiteral";
+import { BlockStatement, IfExpression } from "./nodes/IfExpression";
+import type { IndexExpression } from "./nodes/IndexExpression";
+import { InfixExpression } from "./nodes/InfixExpression";
+import { IntegerLiteral } from "./nodes/IntegerLiteral";
+import { StringLiteral } from "./nodes/StringLiteral";
 
 describe("parser", () => {
   test("string literal", () => {
-    const input = '"Hello world!";'
+    const input = '"Hello world!";';
 
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
     const program = parser.parseProgram();
     checkParserErrors(parser);
 
-
-    const stmt = (program.statements[0] as ExpressionStatement);
+    const stmt = program.statements[0] as ExpressionStatement;
     expect((stmt.Expression as StringLiteral).Value).toBe("Hello world!");
   });
 
@@ -49,7 +54,11 @@ MET MOI CA ICITTE foobar = 838383;
 
     for (let i = 0; i < tests.length; i++) {
       const stmt = program.statements[i];
-      testLetStatement(stmt, tests[i].expectedIdentifier, tests[i].expectedValue);
+      testLetStatement(
+        stmt,
+        tests[i].expectedIdentifier,
+        tests[i].expectedValue,
+      );
     }
   });
 
@@ -58,7 +67,7 @@ MET MOI CA ICITTE foobar = 838383;
 TOKEBEC 5;
 TOKEBEC 10;
 TOKEBEC 993322;
-`
+`;
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
     const program = parser.parseProgram();
@@ -72,7 +81,7 @@ TOKEBEC 993322;
   });
 
   test("expression statements", () => {
-    const input = "foobar;"
+    const input = "foobar;";
 
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
@@ -81,7 +90,7 @@ TOKEBEC 993322;
     expect(program.statements.length).toBe(1);
 
     const stmt = program.statements[0];
-    expect(stmt).toBeInstanceOf(ExpressionStatement)
+    expect(stmt).toBeInstanceOf(ExpressionStatement);
 
     const expr = (stmt as ExpressionStatement).Expression;
     expect(expr).toBeInstanceOf(Identifier);
@@ -91,7 +100,7 @@ TOKEBEC 993322;
   });
 
   test("integer expression", () => {
-    const input = "5;"
+    const input = "5;";
 
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
@@ -102,11 +111,11 @@ TOKEBEC 993322;
     expect(program.statements[0]).toBeInstanceOf(ExpressionStatement);
 
     const stmt = program.statements[0] as ExpressionStatement;
-    const literal = stmt.Expression as IntegerLiteral
+    const literal = stmt.Expression as IntegerLiteral;
     expect(literal).toBeInstanceOf(IntegerLiteral);
     expect(literal.Value).toBe(5);
     expect(literal.tokenLiteral()).toBe("5");
-  })
+  });
 
   describe("prefix expressions", () => {
     const prefixTests = [
@@ -130,7 +139,7 @@ TOKEBEC 993322;
         testLiteralExpression(exp.Right, tt.value);
       });
     }
-  })
+  });
 
   describe("infix expressions", () => {
     const infixTests = [
@@ -159,10 +168,15 @@ TOKEBEC 993322;
         expect(stmt.Expression).toBeInstanceOf(InfixExpression);
 
         const exp = stmt.Expression as InfixExpression;
-        testInfixExpression(exp, testCase.left, testCase.operator, testCase.right);
+        testInfixExpression(
+          exp,
+          testCase.left,
+          testCase.operator,
+          testCase.right,
+        );
       });
     }
-  })
+  });
 
   describe("operator precedence parsing", () => {
     const tests = [
@@ -176,12 +190,24 @@ TOKEBEC 993322;
       { input: "a * b / c", expected: "((a * b) / c)" },
       { input: "a + b / c", expected: "(a + (b / c))" },
       { input: "a / b * c", expected: "((a / b) * c)" },
-      { input: "a + b * c + d / e - f", expected: "(((a + (b * c)) + (d / e)) - f)" },
+      {
+        input: "a + b * c + d / e - f",
+        expected: "(((a + (b * c)) + (d / e)) - f)",
+      },
       { input: "5 > 4 == 3 < 4", expected: "((5 > 4) == (3 < 4))" },
       { input: "5 < 4 != 3 > 4", expected: "((5 < 4) != (3 > 4))" },
-      { input: "3 + 4 * 5 == 3 * 1 + 4 * 5", expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))" },
-      { input: "a * [1, 2, 3, 4][b * c] * d", expected: "((a * ([1, 2, 3, 4][(b * c)])) * d)" },
-      { input: "add(a * b[2], b[1], 2 * [1, 2][1])", expected: "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))" }
+      {
+        input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      },
+      {
+        input: "a * [1, 2, 3, 4][b * c] * d",
+        expected: "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+      },
+      {
+        input: "add(a * b[2], b[1], 2 * [1, 2][1])",
+        expected: "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+      },
     ];
 
     for (const tt of tests) {
@@ -191,18 +217,20 @@ TOKEBEC 993322;
         const program = parser.parseProgram();
         checkParserErrors(parser);
 
-        const actual = astToString(program.statements[0] as ExpressionStatement);
+        const actual = astToString(
+          program.statements[0] as ExpressionStatement,
+        );
         expect(actual).toBe(tt.expected);
       });
     }
-  })
+  });
 
   describe("boolean expressions", () => {
     const tests = [
       { input: "true", expected: "true" },
       { input: "false", expected: "false" },
       { input: "3 > 5 == false", expected: "((3 > 5) == false)" },
-    ]
+    ];
 
     for (const tt of tests) {
       test(`boolean: ${tt.input}`, () => {
@@ -211,7 +239,9 @@ TOKEBEC 993322;
         const program = parser.parseProgram();
         checkParserErrors(parser);
 
-        const actual = astToString(program.statements[0] as ExpressionStatement);
+        const actual = astToString(
+          program.statements[0] as ExpressionStatement,
+        );
         expect(actual).toBe(tt.expected);
       });
     }
@@ -223,7 +253,7 @@ TOKEBEC 993322;
       { input: "(5 + 5) * 2", expected: "((5 + 5) * 2)" },
       { input: "2 / (5 + 5)", expected: "(2 / (5 + 5))" },
       { input: "-(5 + 5)", expected: "(-(5 + 5))" },
-      { input: "!(true == true)", expected: "(!(true == true))", },
+      { input: "!(true == true)", expected: "(!(true == true))" },
     ];
 
     for (const tt of tests) {
@@ -233,11 +263,13 @@ TOKEBEC 993322;
         const program = parser.parseProgram();
         checkParserErrors(parser);
 
-        const actual = astToString(program.statements[0] as ExpressionStatement);
+        const actual = astToString(
+          program.statements[0] as ExpressionStatement,
+        );
         expect(actual).toBe(tt.expected);
       });
     }
-  })
+  });
 
   test("if expressions", () => {
     const input = "AMETON QUE (x < y) { x }";
@@ -260,9 +292,10 @@ TOKEBEC 993322;
 
     expect(ifExpr.Consequence).toBeDefined();
     expect(ifExpr.Consequence!.statements.length).toBe(1);
-    const consequenceStmt = ifExpr.Consequence!.statements[0] as ExpressionStatement;
+    const consequenceStmt = ifExpr.Consequence!
+      .statements[0] as ExpressionStatement;
     testLiteralExpression(consequenceStmt.Expression, "x");
-  })
+  });
 
   test("if else expressions", () => {
     const input = "AMETON QUE (x < y) { x } SINON LA { y }";
@@ -285,14 +318,16 @@ TOKEBEC 993322;
 
     expect(ifExpr.Consequence).toBeDefined();
     expect(ifExpr.Consequence!.statements.length).toBe(1);
-    const consequenceStmt = ifExpr.Consequence!.statements[0] as ExpressionStatement;
+    const consequenceStmt = ifExpr.Consequence!
+      .statements[0] as ExpressionStatement;
     testLiteralExpression(consequenceStmt.Expression, "x");
 
     expect(ifExpr.Alternative).toBeDefined();
     expect(ifExpr.Alternative!.statements.length).toBe(1);
-    const alternativeStmt = ifExpr.Alternative!.statements[0] as ExpressionStatement;
+    const alternativeStmt = ifExpr.Alternative!
+      .statements[0] as ExpressionStatement;
     testLiteralExpression(alternativeStmt.Expression, "y");
-  })
+  });
 
   test("function literal", () => {
     const input = `
@@ -300,20 +335,22 @@ JAI JAMAIS TOUCHER A MES FILLES(a, b)
 x + y
 SAUF UNE FOIS AU CHALET;
 JAI JAMAIS TOUCHER A MES FILLES() SAUF UNE FOIS AU CHALET;
-`
+`;
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
     const program = parser.parseProgram();
 
-    const expr = (program.statements[0] as ExpressionStatement).Expression
+    const expr = (program.statements[0] as ExpressionStatement).Expression;
     const blockBody = (expr as FunctionLiteral).Body as BlockStatement;
 
     expect(program.statements.length).toBe(2);
 
     expect(expr).toBeInstanceOf(FunctionLiteral);
     expect(blockBody.statements.length).toBe(1);
-    expect((blockBody.statements[0] as ExpressionStatement).Expression).toBeInstanceOf(InfixExpression);
-  })
+    expect(
+      (blockBody.statements[0] as ExpressionStatement).Expression,
+    ).toBeInstanceOf(InfixExpression);
+  });
 
   describe("function parameter parsing", () => {
     const tests = [
@@ -326,7 +363,8 @@ JAI JAMAIS TOUCHER A MES FILLES() SAUF UNE FOIS AU CHALET;
         expectedParams: ["x"],
       },
       {
-        input: "JAI JAMAIS TOUCHER A MES FILLES(x, y, z) SAUF UNE FOIS AU CHALET;",
+        input:
+          "JAI JAMAIS TOUCHER A MES FILLES(x, y, z) SAUF UNE FOIS AU CHALET;",
         expectedParams: ["x", "y", "z"],
       },
     ];
@@ -374,13 +412,29 @@ JAI JAMAIS TOUCHER A MES FILLES() SAUF UNE FOIS AU CHALET;
         const program = parser.parseProgram();
         checkParserErrors(parser);
 
-        const actual = astToString(program.statements[0] as ExpressionStatement);
+        const actual = astToString(
+          program.statements[0] as ExpressionStatement,
+        );
         expect(actual).toBe(tt.expected);
       });
     }
   });
 
-  test("array literals", () => {
+  describe("string literal", () => {
+    test("hello world", () => {
+      const input = '"Hello world!";';
+
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer);
+      const program = parser.parseProgram();
+      checkParserErrors(parser);
+
+      const stmt = program.statements[0] as ExpressionStatement;
+      expect((stmt.Expression as StringLiteral).Value).toBe("Hello world!");
+    });
+  });
+
+  test("parsing array literals", () => {
     const input = "[1, 2 * 2, 3 + 3]";
 
     const lexer = new Lexer(input);
@@ -388,174 +442,18 @@ JAI JAMAIS TOUCHER A MES FILLES() SAUF UNE FOIS AU CHALET;
     const program = parser.parseProgram();
     checkParserErrors(parser);
 
+    expect(program.statements.length).toBe(1);
     const stmt = program.statements[0] as ExpressionStatement;
     const array = stmt.Expression as ArrayLiteral;
 
-    if (!(array && ("Elements" in array))) {
-      throw new Error("exp not ast.ArrayLiteral. got=" + stmt.Expression);
-    }
+    expect(array).toBeInstanceOf(ArrayLiteral);
+    expect(array.elements.length).toBe(3);
 
-    if (array.Elements.length !== 3) {
-      throw new Error(`len(array.Elements) not 3. got=${array.Elements.length}`);
-    }
-
-    testLiteralExpression(array.Elements[0], 1);
-    testInfixExpression((array.Elements[1] as InfixExpression), 2, "*", 2);
-    testInfixExpression(array.Elements[2] as InfixExpression, 3, "+", 3);
+    testLiteralExpression(array.elements[0], 1);
+    testInfixExpression(array.elements[1] as InfixExpression, 2, "*", 2);
+    testInfixExpression(array.elements[2] as InfixExpression, 3, "+", 3);
   });
-
-  test("parsing index expressions", () => {
-    const input = "myArray[1 + 1]";
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-
-    expect(stmt).toBeInstanceOf(ExpressionStatement)
-  })
-
-  test("parsing empty hash literal", () => {
-    const input = "{}";
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(0);
-  });
-
-  test("parsing hash literals string keys", () => {
-    const input = '{"one": 1, "two": 2, "three": 3}';
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(3);
-
-    const expected: Record<string, number> = {
-      "one": 1,
-      "two": 2,
-      "three": 3,
-    };
-
-    for (const [keyStr, expectedValue] of Object.entries(expected)) {
-      const pair = hash.Pairs.find(p => (p.key as StringLiteral).Value === keyStr);
-
-
-      expect(pair).toBeDefined();
-      expect(pair.value).toBeInstanceOf(IntegerLiteral);
-      expect((pair.value as IntegerLiteral).Value).toBe(expectedValue);
-    }
-  });
-
-  test("parsing hash literals string keys", () => {
-    const input = '{"one": 1, "two": 2, "three": 3}';
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(3);
-
-    const expected: Record<string, number> = {
-      "one": 1,
-      "two": 2,
-      "three": 3,
-    };
-
-    for (const [keyStr, expectedValue] of Object.entries(expected)) {
-      const pair = hash.Pairs.find(p => (p.key as StringLiteral).Value === keyStr);
-      expect(pair).toBeDefined();
-      expect(pair!.value).toBeInstanceOf(IntegerLiteral);
-      expect((pair!.value as IntegerLiteral).Value).toBe(expectedValue);
-    }
-  });
-
-  test("parsing hash literals integer keys", () => {
-    const input = "{1: 1, 2: 2, 3: 3}";
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(3);
-
-    const expected: Record<number, number> = {
-      1: 1,
-      2: 2,
-      3: 3,
-    };
-
-    for (const pair of hash.Pairs) {
-      const intLit = pair.key as IntegerLiteral;
-      expect(intLit).toBeInstanceOf(IntegerLiteral);
-      const expectedValue = expected[intLit.Value];
-      testLiteralExpression(pair.value, expectedValue);
-    }
-  });
-
-  test("parsing hash literals boolean keys", () => {
-    const input = "{true: 1, false: 2}";
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(2);
-  });
-
-  test("parsing hash literals with expressions", () => {
-    const input = '{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}';
-    const lexer = new Lexer(input);
-    const parser = new Parser(lexer);
-    const program = parser.parseProgram();
-    checkParserErrors(parser);
-
-    const stmt = program.statements[0] as ExpressionStatement;
-    const hash = stmt.Expression as HashLiteral;
-
-    expect(hash).toBeInstanceOf(HashLiteral);
-    expect(hash.Pairs.length).toBe(3);
-
-    const tests: Record<string, (expr: Expression) => void> = {
-      "one": (expr) => testInfixExpression(expr as InfixExpression, 0, "+", 1),
-      "two": (expr) => testInfixExpression(expr as InfixExpression, 10, "-", 8),
-      "three": (expr) => testInfixExpression(expr as InfixExpression, 15, "/", 5),
-    };
-
-    for (const pair of hash.Pairs) {
-      const literal = pair.key as StringLiteral;
-      expect(literal).toBeInstanceOf(StringLiteral);
-      const testFunc = tests[literal.Value];
-      expect(testFunc).toBeDefined();
-      testFunc(pair.value);
-    }
-  });
-})
-
+});
 
 function testLetStatement(stmt: any, name: string, value: any) {
   expect(stmt.tokenLiteral()).toBe("MET MOI CA ICITTE");
@@ -581,7 +479,10 @@ function checkParserErrors(parser: Parser) {
   throw new Error(`parser had ${parser.errors.length} errors`);
 }
 
-function testLiteralExpression(expr: Expression, expected: number | boolean | string): void {
+function testLiteralExpression(
+  expr: Expression,
+  expected: number | boolean | string,
+): void {
   if (typeof expected === "number") {
     expect(expr).toBeInstanceOf(IntegerLiteral);
     const intLit = expr as IntegerLiteral;
@@ -601,7 +502,7 @@ function testInfixExpression(
   expr: InfixExpression,
   leftValue: number | boolean | string,
   operator: string,
-  rightValue: number | boolean | string
+  rightValue: number | boolean | string,
 ): void {
   expect(expr.Operator).toBe(operator);
   testLiteralExpression(expr.Left, leftValue);
@@ -629,12 +530,14 @@ function expressionToString(expr: Expression): string {
     return `(${expressionToString(expr.Left)} ${expr.Operator} ${expressionToString(expr.Right)})`;
   }
   if (expr instanceof FunctionCallExpression) {
-    const args = expr.Arguments.map(arg => expressionToString(arg)).join(", ");
+    const args = expr.Arguments.map((arg) => expressionToString(arg)).join(
+      ", ",
+    );
     return `${expressionToString(expr.Function)}(${args})`;
   }
   if (expr instanceof ArrayLiteral) {
-    const elements = expr.Elements.map(el => expressionToString(el)).join(", ");
-    return `[${elements}]`;
+    const elems = expr.elements.map((e) => expressionToString(e)).join(", ");
+    return `[${elems}]`;
   }
   if (expr && "Left" in expr && "Index" in expr) {
     return `(${expressionToString((expr as IndexExpression).Left)}[${expressionToString((expr as any).Index)}])`;

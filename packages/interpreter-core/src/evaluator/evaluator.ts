@@ -1,166 +1,171 @@
-import { Identifier, ExpressionStatement, LetStatement, PrefixExpression, Program, ReturnStatement, type Node, type Statement, type Expression } from "../parser/ast.js";
-import { Hash } from "./hash.js";
-import type { KeyValuePair } from "../parser/nodes/HashLiteral.js";
-import { HashLiteral } from "../parser/nodes/HashLiteral.js";
-import { Integer } from "./integer.js";
-import { type Hashable, ReturnValue, type Object, OBJECTS } from "./object.js";
-import { IntegerLiteral } from "../parser/nodes/IntegerLiteral.js";
-import { BooleanLiteral } from "../parser/nodes/BooleanExpression.js";
-import { Boolean } from "./boolean.js";
-import { Null } from "./null.js";
-import { InfixExpression } from "../parser/nodes/InfixExpression.js";
-import { BlockStatement, IfExpression } from "../parser/nodes/IfExpression.js";
-import { Error } from "./error.js";
-import { Environment } from "./environment.js";
-import { FunctionLiteral } from "../parser/nodes/FunctionLiteral.js";
-import { Function } from "./function.js";
-import { FunctionCallExpression } from "../parser/nodes/CallExpression.js";
-import { StringLiteral } from "../parser/nodes/StringLiteral.js";
-import { String } from "./string.js";
-import { Builtin, BUILTINS } from "./builtin.js";
-import { ArrayLiteral } from "../parser/nodes/ArrayLiteral.js";
-import { Array as ArrayObj } from "./array.js";
-import { IndexExpression } from "../parser/nodes/IndexExpression.js";
-
-const TRUE = new Boolean(true);
-const FALSE = new Boolean(false);
-const NULL = new Null();
-
-export const OBJ = { TRUE, FALSE, NULL };
+import {
+  CONSTANT_OBJECTS,
+  OBJECTS,
+  type Object,
+} from "./objects/object";
+import {
+  ArrayLiteral,
+  type Expression,
+  ExpressionStatement,
+  Identifier,
+  LetStatement,
+  type Node,
+  PrefixExpression,
+  Program,
+  ReturnStatement,
+  type Statement,
+} from "../parser/ast";
+import { BooleanLiteral } from "../parser/nodes/BooleanExpression";
+import { FunctionCallExpression } from "../parser/nodes/CallExpression";
+import { FunctionLiteral } from "../parser/nodes/FunctionLiteral";
+import { BlockStatement, IfExpression } from "../parser/nodes/IfExpression";
+import { IndexExpression } from "../parser/nodes/IndexExpression";
+import { InfixExpression } from "../parser/nodes/InfixExpression";
+import { IntegerLiteral } from "../parser/nodes/IntegerLiteral";
+import { StringLiteral } from "../parser/nodes/StringLiteral";
+import { Array } from "./objects/array";
+import { BUILTIN_FUCTIONS, Builtin } from "./objects/builtin";
+import { Environment } from "./objects/environment";
+import { Error } from "./objects/error";
+import { Function } from "./objects/function";
+import { Integer } from "./objects/integer";
+import { ReturnValue } from "./objects/return";
+import { String } from "./objects/string";
 
 export function Eval(node: Node, env: Environment): Object {
-  let right: Object;
-  let left: Object;
-
   switch (true) {
-    case (node instanceof StringLiteral):
-      return new String(node.Value);
-    case (node instanceof Identifier):
-      return EvalIdentifier(node, env);
-    case (node instanceof Program):
-      return EvalProgram(node.statements, env);
-    case (node instanceof ExpressionStatement):
+    case node instanceof Program: {
+      return evalProgram(node.statements, env);
+    }
+    case node instanceof ExpressionStatement: {
       return Eval(node.Expression, env);
-    case (node instanceof IntegerLiteral):
+    }
+    case node instanceof IntegerLiteral: {
       return new Integer(node.Value);
-    case (node instanceof BooleanLiteral):
-      return nativeBoolToBoolObject(node.Value);
-    case (node instanceof HashLiteral):
-      return EvalHashLiteral(node, env);
-    case (node instanceof IfExpression):
-      return EvalIfExpression(node, env);
-    case (node instanceof BlockStatement):
-      return EvalBlockStatement(node, env);
-    case (node instanceof IndexExpression):
-      left = Eval(node.Left, env);
+    }
+    case node instanceof BooleanLiteral: {
+      return nativeBoolToBooleanObject(node.Value);
+    }
+    case node instanceof BlockStatement: {
+      return evalBlockStatement(node, env);
+    }
+    case node instanceof ArrayLiteral: {
+      const elements = evalExpressions(node.elements, env);
+      if (elements.length === 1 && isError(elements[0])) return elements[0];
+      return new Array(elements);
+    }
+    case node instanceof FunctionLiteral: {
+      const params = node.Params;
+      const body = node.Body;
+      return new Function(params, body, env);
+    }
+    case node instanceof StringLiteral: {
+      return new String(node.Value);
+    }
+    case node instanceof IndexExpression: {
+      const left = Eval(node.Left, env);
       if (isError(left)) {
         return left;
       }
+
       const index = Eval(node.Index, env);
       if (isError(index)) {
         return index;
       }
-      return EvalIndexExpression(left, index);
-    case (node instanceof ArrayLiteral):
-      const elements = EvalExpression(node.Elements, env);
-      if (elements.length === 1 && isError(elements[0])) {
-        return elements[0];
-      }
-      return new ArrayObj(elements);
-    case (node instanceof ReturnStatement):
-      const value = Eval(node.ReturnValue, env);
-      if (isError(value)) {
-        return value
-      }
-      return new ReturnValue(value);
-    case (node instanceof FunctionLiteral):
-      const params = node.Params;
-      const body = node.Body;
-      return new Function(params, body, env);
-    case (node instanceof PrefixExpression):
-      right = Eval(node.Right, env);
+
+      return evaluateIndexExpression(left, index);
+    }
+    case node instanceof PrefixExpression: {
+      const right = Eval(node.Right, env);
       if (isError(right)) {
         return right;
-      };
-      return EvalPrefixExpression(node.Operator, right);
-    case (node instanceof InfixExpression):
-      right = Eval(node.Right, env);
-      left = Eval(node.Left, env);
-      if (isError(right)) {
-        return right
-      } else if (isError(left)) {
-        return left
-      };
-      return EvalInfixExpression(node.Operator, left, right);
-    case (node instanceof LetStatement):
+      }
+      return evalPrefixExpression(node.Operator, right);
+    }
+    case node instanceof LetStatement: {
       const val = Eval(node.Value, env);
+      if (isError(val)) return val;
+      env.set(node.Identifier.Name, val);
+      return CONSTANT_OBJECTS.null;
+    }
+    case node instanceof Identifier: {
+      return evalIdentifier(node, env);
+    }
+    case node instanceof InfixExpression: {
+      const left = Eval(node.Left, env);
+      if (isError(left)) {
+        return left;
+      }
+
+      const right = Eval(node.Right, env);
+      if (isError(right)) {
+        return right;
+      }
+      return evalInfixExpression(left, right, node.Operator);
+    }
+    case node instanceof ReturnStatement: {
+      const val = Eval(node.ReturnValue, env);
       if (isError(val)) {
         return val;
       }
-      env.set(node.Identifier.Name, val);
-      return OBJ.NULL;
-    case (node instanceof FunctionCallExpression):
+      return new ReturnValue(val);
+    }
+    case node instanceof IfExpression: {
+      return evalIfExpression(node, env);
+    }
+    case node instanceof FunctionCallExpression: {
       const func = Eval(node.Function, env);
-      if (isError(func)) {
-        return func;
-      }
-      const args = EvalExpression(node.Arguments, env)
-      if (args.length === 1 && isError(args[0])) {
-        return args[0];
-      }
+      if (isError(func)) return func;
+      const args = evalExpressions(node.Arguments, env);
+      if (args.length === 1 && isError(args[0])) return args[0];
       return applyFunction(func, args);
+    }
     default:
-      return OBJ.NULL;
+      return CONSTANT_OBJECTS.null;
   }
 }
 
-function applyFunction(func: Object, args: Object[]) {
-  switch (func.Type()) {
-    case "FUNCTION":
-      const fn = func as Function;
-      const extendedEnv = extendFunctionEnv(fn, args);
-      const evaluated = Eval(fn.Body, extendedEnv);
-      return unwrapReturnValue(evaluated);
-    case "BUILTIN":
-      const res = (func as Builtin).func(...args);
-      return res;
-    default:
-      return new Error(`not a function: ${func.Type()}`);
-  }
+function evalIdentifier(node: Identifier, env: Environment) {
+  const val = env.get(node.Name) ?? BUILTIN_FUCTIONS.get(node.Name);
+  if (!val)
+    return new Error(
+      `tire toi une buche la faut qu'on parle, ${node.Name} existe pas`,
+    );
 
+  return val;
 }
 
-function EvalHashLiteral(node: HashLiteral, env: Environment): Object {
-  const pairsMap = new Map<string, KeyValuePair<Hashable, Object>>();
-
-  for (const { key: keyNode, value: valueNode } of node.Pairs) {
-    const key = Eval(keyNode, env);
-    if (isError(key)) {
-      return key;
-    }
-    if (!isHashable(key)) {
-      return new Error(`unusable as hash key: ${key.Type()}`);
-    }
-    const value = Eval(valueNode, env);
-    if (isError(value)) {
-      return value;
-    }
-
-    const hashableKey = key as Hashable;
-    pairsMap.set(hashableKey.HashKey(), { key: hashableKey, value });
+function evalIfExpression(node: IfExpression, env: Environment) {
+  const condition = Eval(node.Condition, env);
+  if (isError(condition)) {
+    return condition;
   }
 
-  return new Hash(Array.from(pairsMap.values()));
+  if (isTruthy(condition)) {
+    return Eval(node.Consequence, env);
+  } else if (node.Alternative) {
+    return Eval(node.Alternative, env);
+  }
+
+  return CONSTANT_OBJECTS.null;
 }
 
-function isHashable(obj: Object): boolean {
-  return obj.Type() === "STRING" || obj.Type() === "INTEGER" || obj.Type() === "BOOLEAN";
+function evalExpressions(exps: Expression[], env: Environment) {
+  const result: Object[] = [];
+
+  for (const e of exps) {
+    const evaluated = Eval(e, env);
+    if (isError(evaluated)) return [evaluated];
+    result.push(evaluated);
+  }
+
+  return result;
 }
 
 function extendFunctionEnv(func: Function, args: Object[]) {
-  const env = new Environment(func.Env);
+  const env = new Environment(func.env);
 
-  func.Params.map((param, idx) => {
+  func.parameters.map((param, idx) => {
     env.set(param.Name, args[idx]);
   });
 
@@ -175,225 +180,229 @@ function unwrapReturnValue(obj: Object) {
   return obj;
 }
 
-function EvalIndexExpression(left: Object, index: Object) {
-  switch (true) {
-    case left.Type() === OBJECTS.ARRAY_OBJ && index.Type() === OBJECTS.INTEGER_OBJ:
-      return EvalArrayIndexExpression(left, index);
-    case left.Type() === OBJECTS.HASH_OBJ:
-      return EvalHashIndexExpression(left, index);
-    default:
-      return new Error(`index operator not supported ${left.Type()}`);
-  }
-}
-
-function EvalHashIndexExpression(hash: Object, index: Object) {
-  const hashObject = hash as Hash;
-
-  if (!isHashable(index)) {
-    return new Error(`unusable as hash key: ${index.Type()}`);
-  }
-
-  const key = index as Hashable;
-
-  const pair = hashObject.Pairs.find(p => p.key.HashKey() === key.HashKey());
-
-  if (!pair) {
-    return OBJ.NULL;
-  }
-
-  return pair.value;
-}
-
-function EvalArrayIndexExpression(left: Object, index: Object) {
-  const idx = (index as Integer).Value;
-  const max = (left as ArrayObj).Elements.length;
-
-  if (idx <= 0 || idx > max) {
-    return OBJ.NULL;
-  }
-
-  return (left as ArrayObj).Elements[idx - 1];
-}
-
-function EvalIdentifier(node: Identifier, env: Environment) {
-  const val = env.get(node.Name);
-
-  if (val) {
-    return val;
-  }
-
-  const builtin = BUILTINS.get(node.Name);
-
-  if (builtin) {
-    return builtin;
-  }
-
-  return new Error(`Identifier not found: ${node.Name}`);
-};
-
-function EvalIfExpression(node: IfExpression, env: Environment) {
-  const condition = Eval(node.Condition, env);
-  if (isError(condition)) {
-    return condition;
-  }
-
-  if (isTruthy(condition)) {
-    return Eval(node.Consequence, env);
-  } else if (!node.Alternative) {
-    return OBJ.NULL;
-  }
-
-  return Eval(node.Alternative, env)
-};
-
-function EvalBlockStatement(block: BlockStatement, env: Environment) {
-  let res: Object;
-
-  for (const stmt of block.statements) {
-    res = Eval(stmt, env);
-
-    if (res.Type() === "RETURN_VALUE" || res.Type() === "ERROR") {
-      return res;
+function applyFunction(fn: Object, args: Object[]) {
+  switch (fn.Type()) {
+    case OBJECTS.FUNCTION_OBJ: {
+      const extendedEnv = extendFunctionEnv(fn as Function, args);
+      const evaluated = Eval((fn as Function).body, extendedEnv);
+      return unwrapReturnValue(evaluated);
+    }
+    case OBJECTS.BUILTIN_OBJ: {
+      return (fn as Builtin).func(...args);
+    }
+    default: {
+      return new Error(
+        `Arrete de niaise avec la puck, c'est pas une fonction ca c'est ${fn.Type()}`,
+        fn.Inspect(),
+      );
     }
   }
-
-  return res;
-};
+}
 
 function isTruthy(obj: Object) {
   switch (obj) {
-    case NULL:
+    case CONSTANT_OBJECTS.null: {
       return false;
-    case TRUE:
+    }
+    case CONSTANT_OBJECTS.false: {
+      return false;
+    }
+    default: {
       return true;
-    case FALSE:
-      return false
-    default:
-      return true;
+    }
   }
 }
 
-function EvalProgram(stmts: Statement[], env: Environment) {
-  let result: Object = OBJ.NULL;
+function evalBlockStatement(node: BlockStatement, env: Environment) {
+  let result: Object;
 
-  for (const stmt of stmts) {
+  for (const stmt of node.statements) {
     result = Eval(stmt, env);
 
-    switch (true) {
-      case result instanceof ReturnValue:
-        return result.Value;
-      case result instanceof Error:
-        return result;
-    }
+    if (!result) return result;
+
+    const isReturn = result.Type() === OBJECTS.RETURN_VALUE_OBJ;
+    const isError = result.Type() === OBJECTS.ERROR_OBJ;
+    const shouldReturn = isReturn || isError;
+
+    if (result && shouldReturn) return result;
   }
 
   return result;
 }
 
-function nativeBoolToBoolObject(value: boolean) {
-  if (value) {
-    return OBJ.TRUE;
+function evalInfixExpression(left: Object, right: Object, operator: string) {
+  switch (true) {
+    case left.Type() === OBJECTS.INTEGER_OBJ &&
+      right.Type() === OBJECTS.INTEGER_OBJ: {
+      return evalIntegerInfixExpression(operator, left, right);
+    }
+    case left.Type() === OBJECTS.BOOLEAN_OBJ &&
+      right.Type() === OBJECTS.BOOLEAN_OBJ: {
+      if (operator === "==") {
+        return nativeBoolToBooleanObject(left === right);
+      } else if (operator === "!=") {
+        return nativeBoolToBooleanObject(left !== right);
+      }
+      return new Error(
+        `Ca marche pas ton affaire: ${left.Type()} ${operator} ${right.Type()}`,
+      );
+    }
+    case left.Type() === OBJECTS.STRING_OBJ &&
+      right.Type() === OBJECTS.STRING_OBJ: {
+      return evalStringInfixExpression(operator, left, right);
+    }
+    case left.Type() !== right.Type():
+      return new Error(
+        `Tu mélanges des affaires qui se mélangent pas mon pite: ${left.Type()} pis ${right.Type()}`,
+      );
+    default: {
+      return new Error(
+        `Tu t'es tu virer une brosse en fds? ${left.Type()} ${operator} ${right.Type()}`,
+      );
+    }
   }
-
-  return OBJ.FALSE;
 }
 
-function EvalPrefixExpression(operator: string, right: Object) {
+function evalStringInfixExpression(
+  operator: string,
+  left: Object,
+  right: Object,
+) {
+  const leftVal = (left as String).Value;
+  const rightVal = (right as String).Value;
+
+  if (operator !== "+") {
+    return new Error(
+      `Ca a pas d'allure ton affaire: ${left.Type()} ${operator} ${right.Type()}`,
+    );
+  }
+
+  return new String(leftVal + rightVal);
+}
+
+function evalIntegerInfixExpression(
+  operator: string,
+  left: Object,
+  right: Object,
+) {
+  const leftVal = (left as Integer).Value;
+  const rightVal = (right as Integer).Value;
+
+  switch (operator) {
+    case "+": {
+      return new Integer(leftVal + rightVal);
+    }
+    case "-": {
+      return new Integer(leftVal - rightVal);
+    }
+    case "/": {
+      if (rightVal === 0) {
+        return new Error("Esti de tawin qui essaye de diviser par zero");
+      }
+      return new Integer(leftVal / rightVal);
+    }
+    case "*": {
+      return new Integer(leftVal * rightVal);
+    }
+    case "<": {
+      return nativeBoolToBooleanObject(leftVal < rightVal);
+    }
+    case ">": {
+      return nativeBoolToBooleanObject(leftVal > rightVal);
+    }
+    case "==": {
+      return nativeBoolToBooleanObject(leftVal === rightVal);
+    }
+    case "!=": {
+      return nativeBoolToBooleanObject(leftVal !== rightVal);
+    }
+    default: {
+      return new Error(`Ca marche pus ton affaire: ${operator}`);
+    }
+  }
+}
+
+function evalPrefixExpression(operator: string, value: Object) {
   switch (operator) {
     case "!":
-      return EvalBangOperatorExpression(right);
+      return evalBangOperatorExpression(value);
     case "-":
-      return EvalMinusPrefixOperatorExpression(right);
+      return evalMinusPrefixOperatorExpression(value);
     default:
-      return new Error(`unknown operator: ${operator}, ${right.Type()}`);
+      return new Error(`C'est quoi stafaire la: ${operator} ${value.Type()}`);
   }
 }
 
-function EvalMinusPrefixOperatorExpression(right: Object) {
-  if (right.Type() != OBJECTS.INTEGER_OBJ) {
-    return new Error(`unknown operator: -${right.Type()}`);
+function evalMinusPrefixOperatorExpression(value: Object) {
+  if (value === CONSTANT_OBJECTS.null) {
+    return new Error("Y'a rien là mon chum");
   }
-  const value = (right as Integer).Value
-  return new Integer(-value);
-}
-
-function EvalInfixExpression(operator: string, left: Object, right: Object) {
-  switch (true) {
-    case right.Type() === "INTEGER" && left.Type() === "INTEGER":
-      return EvalIntegerInfixExpression(operator, left, right);
-    case right.Type() === "STRING" && left.Type() === "STRING":
-      return EvalStringInfixExpression(operator, left, right);
-    case right.Type() !== left.Type():
-      return new Error(`type mismatch: ${left.Type()} ${operator} ${right.Type()}`);
-    default:
-      return new Error(`unknown operator: ${left.Type()} ${operator} ${right.Type()}`);
-  }
-}
-
-function EvalStringInfixExpression(operator: string, left: Object, right: Object) {
-  if (operator !== "+") {
-    return new Error(`unknown operator: ${left.Type()} ${operator} ${right.Type()}`);
+  if (value.Type() !== OBJECTS.INTEGER_OBJ) {
+    return new Error(`C'est quoi stafaire la: -${value.Type()}`);
   }
 
-  const leftString = (left as String).Value;
-  const rightString = (right as String).Value;
-
-  return new String(leftString + rightString);
-
+  return new Integer(-(value as Integer).Value);
 }
 
-function EvalExpression(exps: Expression[], env: Environment) {
-  let res: Object[] = [];
+function evaluateIndexExpression(left: Object, index: Object) {
+  if (left.Type() !== OBJECTS.ARRAY_OBJ) {
+    return new Error(`c'est pas un array ca mon chum: ${left.Type()}`);
+  } else if (index.Type() !== OBJECTS.INTEGER_OBJ) {
+    return new Error(`va me falloir un integer mon chum pas ${index.Type()}`);
+  }
 
-  for (const exp of exps) {
-    const evaluated = Eval(exp, env)
-    if (isError(evaluated)) {
-      return [evaluated]
+  return evalArrayIndexExpression(left, index);
+}
+
+function evalArrayIndexExpression(left: Object, index: Object) {
+  const array = left as Array;
+  const indexValue = (index as Integer).Value;
+
+  if (indexValue === 0) {
+    return new Error("Ca marche pas dmeme icitte");
+  }
+
+  if (indexValue < 0 || indexValue > array.Elements.length) {
+    return CONSTANT_OBJECTS.null;
+  }
+
+  return array.Elements[indexValue - 1];
+}
+
+function evalBangOperatorExpression(value: Object) {
+  switch (value) {
+    case CONSTANT_OBJECTS.true: {
+      return CONSTANT_OBJECTS.false;
     }
-    res.push(evaluated);
-  }
-  return res;
-}
-
-function EvalIntegerInfixExpression(operator: string, left: Object, right: Object) {
-  const rightVal = (right as Integer).Value;
-  const leftVal = (left as Integer).Value;
-  switch (operator) {
-    case "+":
-      return new Integer(leftVal + rightVal);
-    case "-":
-      return new Integer(leftVal - rightVal);
-    case "*":
-      return new Integer(leftVal * rightVal);
-    case "/":
-      return new Integer(leftVal / rightVal);
-    case "<":
-      return nativeBoolToBoolObject(leftVal < rightVal);
-    case ">":
-      return nativeBoolToBoolObject(leftVal > rightVal);
-    case "==":
-      return nativeBoolToBoolObject(leftVal == rightVal);
-    case "!=":
-      return nativeBoolToBoolObject(leftVal != rightVal);
+    case CONSTANT_OBJECTS.false: {
+      return CONSTANT_OBJECTS.true;
+    }
+    case CONSTANT_OBJECTS.null: {
+      return CONSTANT_OBJECTS.false;
+    }
     default:
-      return OBJ.NULL;
-  }
-}
-
-function EvalBangOperatorExpression(right: Object) {
-  switch (right) {
-    case TRUE:
-      return OBJ.FALSE;
-    case FALSE:
-      return OBJ.TRUE
-    case NULL:
-      return OBJ.FALSE
-    default:
-      return OBJ.FALSE;
+      return CONSTANT_OBJECTS.false;
   }
 }
 
 function isError(obj: Object) {
-  return obj.Type() === "ERROR";
+  return obj !== null && obj !== undefined && obj.Type() === OBJECTS.ERROR_OBJ;
 }
 
+function evalProgram(stms: Statement[], env: Environment) {
+  let result: Object;
+
+  for (const stmt of stms) {
+    result = Eval(stmt, env);
+
+    if (result instanceof ReturnValue) return result.Value;
+    if (result instanceof Error) return result;
+  }
+
+  return result;
+}
+
+function nativeBoolToBooleanObject(input: boolean) {
+  return input ? CONSTANT_OBJECTS.true : CONSTANT_OBJECTS.false;
+}

@@ -1,7 +1,6 @@
-import { OBJECTS, type Object } from "./object.js";
+import { OBJECTS, type Object } from "./object";
 
 export class Null implements Object {
-
   Inspect() {
     return "null";
   }
@@ -9,5 +8,4 @@ export class Null implements Object {
   Type() {
     return OBJECTS.NULL_OBJ;
   }
-
 }

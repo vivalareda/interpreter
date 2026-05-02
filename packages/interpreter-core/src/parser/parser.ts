@@ -1,35 +1,37 @@
-import type { Lexer } from "../lexer/lexer.js";
-import { type Token, type TokenType, TOKENS } from "../lexer/token.js";
-import { LetStatement } from "./nodes/LetStatement.js";
-import { PrefixExpression, Program } from "./ast.js";
-import { ExpressionStatement, ReturnStatement, type Expression } from "./ast.js";
-import { IntegerLiteral } from "./nodes/IntegerLiteral.js";
-import { InfixExpression } from "./nodes/InfixExpression.js";
-import { BooleanLiteral } from "./nodes/BooleanExpression.js";
-import { IfExpression, BlockStatement } from "./nodes/IfExpression.js";
-import { FunctionLiteral } from "./nodes/FunctionLiteral.js";
-import { FunctionCallExpression } from "./nodes/CallExpression.js";
-import { Identifier } from "./ast.js";
-import { StringLiteral } from "./nodes/StringLiteral.js";
-import { ArrayLiteral } from "./nodes/ArrayLiteral.js";
-import { IndexExpression } from "./nodes/IndexExpression.js";
-import { HashLiteral } from "./nodes/HashLiteral.js";
+import type { Lexer } from "../lexer/lexer";
+import { TOKENS, type Token, type TokenType } from "../lexer/token";
+import {
+  type Expression,
+  ExpressionStatement,
+  ReturnStatement,
+} from "./ast";
+import { LetStatement } from "./nodes/LetStatement";
+import { Identifier, PrefixExpression, Program } from "./ast";
+import { ArrayLiteral } from "./nodes/ArrayLiteral";
+import { BooleanLiteral } from "./nodes/BooleanExpression";
+import { FunctionCallExpression } from "./nodes/CallExpression";
+import { FunctionLiteral } from "./nodes/FunctionLiteral";
+import { BlockStatement, IfExpression } from "./nodes/IfExpression";
+import { IndexExpression } from "./nodes/IndexExpression";
+import { InfixExpression } from "./nodes/InfixExpression";
+import { IntegerLiteral } from "./nodes/IntegerLiteral";
+import { StringLiteral } from "./nodes/StringLiteral";
 
 export type PrefixParseFn = () => Expression;
 export type InfixParseFns = (exp: Expression) => Expression;
 
 const PRECEDENCE = {
   LOWEST: 1,
-  EQUALS: 2, // EQUALS
-  LESSGREATER: 3, // > or <
-  SUM: 4, // +
-  PRODUCT: 5, // *
-  PREFIX: 6, // -X or !X
-  CALL: 7, // myFunction(X)
-  INDEX: 8, // array indexes;
+  EQUALS: 2,
+  LESSGREATER: 3,
+  SUM: 4,
+  PRODUCT: 5,
+  PREFIX: 6,
+  CALL: 7,
+  INDEX: 8,
 } as const;
 
-type PRECEDENCES = typeof PRECEDENCE[keyof typeof PRECEDENCE];
+type PRECEDENCES = (typeof PRECEDENCE)[keyof typeof PRECEDENCE];
 
 const precedenceMap: Map<string, PRECEDENCES> = new Map([
   [TOKENS.LPAREN, PRECEDENCE.CALL],
@@ -44,16 +46,19 @@ const precedenceMap: Map<string, PRECEDENCES> = new Map([
   [TOKENS.LBRACKET, PRECEDENCE.INDEX],
 ]);
 
+export type ParseError = {
+  message: string;
+  token: Token;
+};
+
 export class Parser {
   currToken: Token;
   peekToken: Token;
-  errors: string[] = [];
+  errors: ParseError[] = [];
   prefixParseFn: Map<TokenType, PrefixParseFn> = new Map();
   infixParseFn: Map<TokenType, InfixParseFns> = new Map();
 
-  constructor(
-    public lexer: Lexer,
-  ) {
+  constructor(public lexer: Lexer) {
     this.lexer = lexer;
     this.registerFnMaps();
 
@@ -65,10 +70,12 @@ export class Parser {
     this.registerPrefixFn(TOKENS.IDENT, this.parseIdentifier.bind(this));
     this.registerPrefixFn(TOKENS.INT, this.parseIntegerExpression.bind(this));
     this.registerPrefixFn(TOKENS.STRING, this.parseStringLiteral.bind(this));
-
-    this.registerPrefixFn(TOKENS.LPAREN, this.parseGroupedExpression.bind(this));
     this.registerPrefixFn(TOKENS.LBRACKET, this.parseArrayLiteral.bind(this));
-    this.registerPrefixFn(TOKENS.LBRACE, this.parseHashLiteral.bind(this));
+
+    this.registerPrefixFn(
+      TOKENS.LPAREN,
+      this.parseGroupedExpression.bind(this),
+    );
 
     this.registerPrefixFn(TOKENS.TRUE, this.parseBoolean.bind(this));
     this.registerPrefixFn(TOKENS.FALSE, this.parseBoolean.bind(this));
@@ -77,10 +84,17 @@ export class Parser {
     this.registerPrefixFn(TOKENS.MINUS, this.parsePrefixExpression.bind(this));
 
     this.registerPrefixFn(TOKENS.IF, this.parseIfExpression.bind(this));
-    this.registerPrefixFn(TOKENS.FNSTART, this.parseFunctionExpression.bind(this));
+    this.registerPrefixFn(
+      TOKENS.FNSTART,
+      this.parseFunctionExpression.bind(this),
+    );
 
-    this.registerInfixFn(TOKENS.LPAREN, this.parseFunctionCallExpression.bind(this));
+    this.registerInfixFn(
+      TOKENS.LPAREN,
+      this.parseFunctionCallExpression.bind(this),
+    );
 
+    this.registerInfixFn(TOKENS.LBRACKET, this.parseIndexExpression.bind(this));
     this.registerInfixFn(TOKENS.PLUS, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.MINUS, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.ASTERISK, this.parseInfixExpression.bind(this));
@@ -89,8 +103,6 @@ export class Parser {
     this.registerInfixFn(TOKENS.LT, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.EQ, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.NEQ, this.parseInfixExpression.bind(this));
-
-    this.registerInfixFn(TOKENS.LBRACKET, this.parseIndexExpression.bind(this));
   }
 
   registerPrefixFn(type: TokenType, fn: PrefixParseFn) {
@@ -111,9 +123,24 @@ export class Parser {
   }
 
   peekError(expectedType: string) {
-    this.errors.push(
-      `expected next token to be ${expectedType} got ${this.peekToken.Type} instead`,
-    );
+    const expected =
+      expectedType === "IDENT" ? "une variable" : `"${expectedType}"`;
+
+    const actual =
+      this.peekToken.Type === "IDENT"
+        ? "une variable"
+        : `"${this.peekToken.Type}"`;
+
+    const errors = [
+      `Es tu sur que c'est ${actual} qui va la? j'pense que ${expected} fait plus de sense t'en pense quoi mon pite!`,
+      `Hein?? ${actual}?? C'est ${expected} que ça prend mon chum, réveille`,
+      `T'as mis un ${actual} mais j'veux ${expected}... c'est-tu si compliqué que ça osti`,
+      `tu dors au gaz, ${actual} a la place de ${expected}`,
+    ];
+    this.errors.push({
+      message: errors[Math.floor(Math.random() * errors.length)],
+      token: this.peekToken,
+    });
   }
 
   parseStringLiteral() {
@@ -122,8 +149,7 @@ export class Parser {
 
   parseArrayLiteral() {
     const token = this.currToken;
-
-    const elements = this.parseExpressionList(TOKENS.RBRACKET);
+    const elements: Expression[] = this.parseExpressionList(TOKENS.RBRACKET);
 
     return new ArrayLiteral(token, elements);
   }
@@ -134,7 +160,6 @@ export class Parser {
     this.nextToken();
 
     const index = this.parseExpression(PRECEDENCE.LOWEST);
-    console.log(`index is ${index}`);
 
     if (!this.expectPeekAndAdvance(TOKENS.RBRACKET)) {
       return;
@@ -143,40 +168,12 @@ export class Parser {
     return new IndexExpression(token, left, index);
   }
 
-  parseHashLiteral() {
-    const hash = new HashLiteral(this.currToken);
-
-    while (!this.peekTokenIs(TOKENS.RBRACE)) {
-      this.nextToken();
-      const key = this.parseExpression(PRECEDENCE.LOWEST);
-
-      if (!this.expectPeekAndAdvance(TOKENS.COLON)) {
-        return;
-      }
-
-      this.nextToken();
-      const value = this.parseExpression(PRECEDENCE.LOWEST);
-
-      hash.Pairs.push({ key, value })
-
-      if (!this.peekTokenIs(TOKENS.RBRACE) && !this.expectPeekAndAdvance(TOKENS.COMMA)) {
-        return;
-      }
-    }
-
-    if (!this.expectPeekAndAdvance(TOKENS.RBRACE)) {
-      return;
-    }
-
-    return hash
-  }
-
   parseExpressionList(endToken: string) {
     const elements: Expression[] = [];
 
     if (this.peekTokenIs(endToken)) {
-      this.nextToken()
-      return elements
+      this.nextToken();
+      return elements;
     }
 
     this.nextToken();
@@ -193,6 +190,18 @@ export class Parser {
     }
 
     return elements;
+  }
+
+  parseGroupedExpression() {
+    this.nextToken();
+
+    const exp = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.expectPeekAndAdvance(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    return exp;
   }
 
   parseIfExpression() {
@@ -214,7 +223,7 @@ export class Parser {
       return;
     }
 
-    const consequence = this.parseBlockStatement();
+    const consequence = this.parseBlockStatement(TOKENS.RBRACE);
 
     if (this.peekTokenIs(TOKENS.ELSE)) {
       this.nextToken();
@@ -223,10 +232,9 @@ export class Parser {
         return;
       }
 
-      const alternative = this.parseBlockStatement();
+      const alternative = this.parseBlockStatement(TOKENS.RBRACE);
 
       return new IfExpression(token, condition, consequence, alternative);
-
     }
 
     return new IfExpression(token, condition, consequence);
@@ -235,9 +243,7 @@ export class Parser {
   parseFunctionParams() {
     let params: Identifier[] = [];
 
-    while (this.peekTokenIs(TOKENS.COMMA) ||
-      this.peekTokenIs(TOKENS.RPAREN)
-    ) {
+    while (this.peekTokenIs(TOKENS.COMMA) || this.peekTokenIs(TOKENS.RPAREN)) {
       const ident = new Identifier(this.currToken, this.currToken.Literal);
       params.push(ident);
 
@@ -263,25 +269,25 @@ export class Parser {
     this.nextToken();
     const params = this.parseFunctionParams();
 
-    const body = this.parseBlockStatement();
+    const body = this.parseBlockStatement(TOKENS.FNEND);
 
     return new FunctionLiteral(token, params, body);
-  };
+  }
 
   parseFunctionCallExpression(func: Expression) {
     const args = this.parseExpressionList(TOKENS.RPAREN);
-    return new FunctionCallExpression(this.currToken, func, args)
-  };
+    return new FunctionCallExpression(this.currToken, func, args);
+  }
 
-  parseBlockStatement() {
+  parseBlockStatement(expectedEndToken: string = TOKENS.EOF) {
+    const openingToken = this.currToken;
     const blockStatement = new BlockStatement(this.currToken);
 
     this.nextToken();
 
     while (
-      !this.currTokenIs(TOKENS.RBRACE) &&
-      !this.currTokenIs(TOKENS.EOF) &&
-      !this.currTokenIs(TOKENS.FNEND)
+      !this.currTokenIs(expectedEndToken) &&
+      !this.currTokenIs(TOKENS.EOF)
     ) {
       const stmt = this.parseStatement();
       if (stmt) {
@@ -290,19 +296,14 @@ export class Parser {
       this.nextToken();
     }
 
-    return blockStatement;
-  }
-
-  parseGroupedExpression() {
-    this.nextToken();
-
-    const exp = this.parseExpression(PRECEDENCE.LOWEST);
-
-    if (!this.expectPeekAndAdvance(TOKENS.RPAREN)) {
-      return null;
+    if (expectedEndToken !== TOKENS.EOF && this.currTokenIs(TOKENS.EOF)) {
+      this.errors.push({
+        message: `Tu as oublié de fermer ton bloc le zouf!`,
+        token: openingToken,
+      });
     }
 
-    return exp;
+    return blockStatement;
   }
 
   parseInfixExpression(leftExp: Expression) {
@@ -316,7 +317,10 @@ export class Parser {
   }
 
   parseIntegerExpression() {
-    return new IntegerLiteral(this.currToken, Number.parseInt(this.currToken.Literal, 10));
+    return new IntegerLiteral(
+      this.currToken,
+      Number.parseInt(this.currToken.Literal, 10),
+    );
   }
 
   parseBoolean() {
@@ -360,12 +364,12 @@ export class Parser {
 
     let leftExp = prefix();
 
-
-    while (this.peekPrecedence() > precedence
-      && !this.peekTokenIs(TOKENS.SEMICOLON)) {
+    while (
+      this.peekPrecedence() > precedence &&
+      !this.peekTokenIs(TOKENS.SEMICOLON)
+    ) {
       const infix = this.infixParseFn.get(this.peekToken.Type);
       if (!infix) {
-        console.log(`no infix for ${this.currToken.Literal}`);
         return leftExp;
       }
 
@@ -406,11 +410,10 @@ export class Parser {
     }
 
     return new ExpressionStatement(token, stmt);
-  };
+  }
 
   parseReturn() {
     const returnToken = this.currToken;
-
 
     this.nextToken();
 
@@ -463,9 +466,12 @@ export class Parser {
   parseProgram() {
     const program = new Program();
 
-
     while (this.currToken.Type !== TOKENS.EOF) {
-      const stmt = this.parseStatement()
+      if (this.currTokenIs(TOKENS.COMMENT)) {
+        this.nextToken();
+        continue;
+      }
+      const stmt = this.parseStatement();
       if (stmt) {
         program.statements.push(stmt);
       }

@@ -1,18 +1,19 @@
-export * from "../parser/nodes/LetStatement.js";
-export * from "../parser/nodes/ReturnStatement.js";
-export * from "../parser/nodes/PrefixExpression.js";
-export * from "../parser/nodes/Identifier.js";
-export * from "../parser/nodes/ExpressionStatement.js";
+export * from "./nodes/ArrayLiteral";
+export * from "./nodes/ExpressionStatement";
+export * from "./nodes/Identifier";
+export * from "./nodes/LetStatement";
+export * from "./nodes/PrefixExpression";
+export * from "./nodes/ReturnStatement";
 
 export type Node = Statement | Expression | Program;
 
 export interface Statement {
-  tokenLiteral: () => string,
+  tokenLiteral: () => string;
   statementNode: true;
 }
 
 export interface Expression {
-  tokenLiteral: () => String
+  tokenLiteral: () => String;
   expressionNode: true;
 }
 
@@ -32,4 +33,3 @@ export class Program {
     return out;
   }
 }
-

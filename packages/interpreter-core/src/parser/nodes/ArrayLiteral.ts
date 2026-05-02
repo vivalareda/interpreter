@@ -1,20 +1,19 @@
-import type { Token } from "../../lexer/token.js";
-import type { Expression } from "../ast.js";
+import type { Token } from "../../lexer/token";
+import type { Expression } from "../ast";
 
 export class ArrayLiteral implements Expression {
-  expressionNode = true as const;
+  expressionNode: true;
 
   constructor(
-    public Token: Token,
-    public Elements: Expression[],
-  ) { };
+    public token: Token,
+    public elements: Expression[],
+  ) {}
 
   tokenLiteral() {
-    return this.Token.Literal;
+    return this.token.Literal;
   }
 
   toString() {
-    return "[" + this.Elements.map((el) => el.toString()).join(", ") + "]";
+    return this.elements.map((e) => e.toString()).join(", ");
   }
-
 }

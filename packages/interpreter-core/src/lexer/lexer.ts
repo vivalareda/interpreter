@@ -1,20 +1,28 @@
-import type { Token } from "./token.js";
-import { TOKENS } from "./token.js";
+import type { Token } from "./token";
+import { TOKENS } from "./token";
 
 export class Lexer {
   private currPosition: number;
   private nextPosition: number;
   private currChar: string | null;
+  private line: number;
+  private column: number;
 
   constructor(public input: string) {
     this.currPosition = 0;
     this.nextPosition = 0;
     this.currChar = null;
+    this.line = 1;
+    this.column = 0;
+
     this.readChar();
   }
 
   nextToken() {
     this.skipWhitespace();
+
+    const line = this.line;
+    const column = this.column;
     let token: Token;
 
     switch (this.currChar) {
@@ -22,87 +30,200 @@ export class Lexer {
         if (this.peek() === "=") {
           const literal = this.input[this.currPosition];
           this.readChar();
-          token = { Type: TOKENS.EQ, Literal: literal + this.currChar };
+          token = {
+            Type: TOKENS.EQ,
+            Literal: literal + this.currChar,
+            Line: line,
+            Column: column,
+          };
         } else {
-          token = { Type: TOKENS.ASSIGN, Literal: this.currChar };
+          token = {
+            Type: TOKENS.ASSIGN,
+            Literal: this.currChar,
+            Line: line,
+            Column: column,
+          };
         }
         break;
       case "!":
         if (this.peek() === "=") {
           const literal = this.input[this.currPosition];
           this.readChar();
-          token = { Type: TOKENS.NEQ, Literal: literal + this.currChar };
+          token = {
+            Type: TOKENS.NEQ,
+            Literal: literal + this.currChar,
+            Line: line,
+            Column: column,
+          };
         } else {
-          token = { Type: TOKENS.BANG, Literal: this.currChar };
+          token = {
+            Type: TOKENS.BANG,
+            Literal: this.currChar,
+            Line: line,
+            Column: column,
+          };
         }
         break;
-      case '"':
+      case '"': {
         const value = this.readString();
-        token = { Type: TOKENS.STRING, Literal: value };
+        token = {
+          Type: TOKENS.STRING,
+          Literal: value,
+          Line: line,
+          Column: column,
+        };
         break;
+      }
       case ":":
-        token = { Type: TOKENS.COLON, Literal: this.currChar };
+        token = {
+          Type: TOKENS.COLON,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "[":
-        token = { Type: TOKENS.LBRACKET, Literal: this.currChar };
+        token = {
+          Type: TOKENS.LBRACKET,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "]":
-        token = { Type: TOKENS.RBRACKET, Literal: this.currChar };
+        token = {
+          Type: TOKENS.RBRACKET,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "<":
-        token = { Type: TOKENS.LT, Literal: this.currChar };
+        token = {
+          Type: TOKENS.LT,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case ">":
-        token = { Type: TOKENS.GT, Literal: this.currChar };
+        token = {
+          Type: TOKENS.GT,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "(":
-        token = { Type: TOKENS.LPAREN, Literal: this.currChar };
+        token = {
+          Type: TOKENS.LPAREN,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case ")":
-        token = { Type: TOKENS.RPAREN, Literal: this.currChar };
+        token = {
+          Type: TOKENS.RPAREN,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "{":
-        token = { Type: TOKENS.LBRACE, Literal: this.currChar };
+        token = {
+          Type: TOKENS.LBRACE,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "}":
-        token = { Type: TOKENS.RBRACE, Literal: this.currChar };
+        token = {
+          Type: TOKENS.RBRACE,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case ",":
-        token = { Type: TOKENS.COMMA, Literal: this.currChar };
+        token = {
+          Type: TOKENS.COMMA,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case ";":
-        token = { Type: TOKENS.SEMICOLON, Literal: this.currChar };
+        token = {
+          Type: TOKENS.SEMICOLON,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "/":
-        token = { Type: TOKENS.SLASH, Literal: this.currChar };
+        token = {
+          Type: TOKENS.SLASH,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "*":
-        token = { Type: TOKENS.ASTERISK, Literal: this.currChar };
+        token = {
+          Type: TOKENS.ASTERISK,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "+":
-        token = { Type: TOKENS.PLUS, Literal: this.currChar };
+        token = {
+          Type: TOKENS.PLUS,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case "-":
-        token = { Type: TOKENS.MINUS, Literal: this.currChar };
-        break;
-      case "/":
-        token = { Type: TOKENS.SLASH, Literal: this.currChar };
+        token = {
+          Type: TOKENS.MINUS,
+          Literal: this.currChar,
+          Line: line,
+          Column: column,
+        };
         break;
       case null:
-        token = { Type: TOKENS.EOF, Literal: "" };
+        token = { Type: TOKENS.EOF, Literal: "", Line: line, Column: column };
         break;
       default:
         if (this.isLetter(this.currChar)) {
           const literal = this.readIdentifier();
           const type = this.identifierType(literal);
-          token = { Type: type, Literal: literal };
+          token = {
+            Type: type,
+            Literal: literal,
+            Line: line,
+            Column: column,
+          };
           return token;
         } else if (this.isDigit(this.currChar)) {
           const literal = this.readNumber();
-          token = { Type: TOKENS.INT, Literal: literal };
+          token = {
+            Type: TOKENS.INT,
+            Literal: literal,
+            Line: line,
+            Column: column,
+          };
           return token;
         } else {
-          token = { Type: TOKENS.ILLEGAL, Literal: this.currChar };
+          token = {
+            Type: TOKENS.ILLEGAL,
+            Literal: this.currChar,
+            Line: line,
+            Column: column,
+          };
         }
     }
 
@@ -111,12 +232,21 @@ export class Lexer {
     return token;
   }
 
-  peek(): string {
+  skipUntilNewline() {
+    while (this.currChar !== null && this.currChar !== "\n") {
+      this.readChar();
+    }
+  }
+
+  peek() {
     if (this.currPosition >= this.input.length) {
       return "";
     }
 
-    return this.input[this.nextPosition];
+    const peekChar = this.input[this.nextPosition];
+    if (!peekChar) throw new Error("tried to peek next char but got nothing");
+
+    return peekChar;
   }
 
   readString() {
@@ -135,39 +265,62 @@ export class Lexer {
       this.readChar();
     }
     const ident = this.input.slice(startingPosition, this.currPosition);
+    if (ident === "TYL") {
+      this.skipUntilNewline();
+      return ident;
+    }
     if (ident === "AMETON") {
       const nextWord = this.readNextWord();
+      if (nextWord === "") return ident;
       if (nextWord === "QUE") {
         return `${ident} ${nextWord}`;
       }
     } else if (ident === "MET") {
       let value = ident;
       while (value !== "MET MOI CA ICITTE") {
-        value += ` ${this.readNextWord()}`;
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
       }
       return value;
     } else if (ident === "JAI") {
       let value = ident;
       while (value !== "JAI JAMAIS TOUCHER A MES FILLES") {
-        value += ` ${this.readNextWord()}`;
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
       }
       return value;
     } else if (ident === "SAUF") {
       let value = ident;
       while (value !== "SAUF UNE FOIS AU CHALET") {
-        value += ` ${this.readNextWord()}`;
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
       }
       return value;
     } else if (ident === "SINON") {
       let value = ident;
       while (value !== "SINON LA") {
-        value += ` ${this.readNextWord()}`;
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
       }
       return value;
     } else if (ident === "GAROCHE") {
       let value = ident;
       while (value !== "GAROCHE MOI CA") {
-        value += ` ${this.readNextWord()}`;
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
+      }
+      return value;
+    } else if (ident === "CEST") {
+      let value = ident;
+      while (value !== "CEST LONG COMMENT") {
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
       }
       return value;
     }
@@ -206,6 +359,8 @@ export class Lexer {
         return TOKENS.RETURN;
       case "SINON LA":
         return TOKENS.ELSE;
+      case "TYL":
+        return TOKENS.COMMENT;
       case "true":
         return TOKENS.TRUE;
       case "false":
@@ -219,10 +374,23 @@ export class Lexer {
     if (this.nextPosition >= this.input.length) {
       this.currChar = null;
     } else {
-      this.currChar = this.input[this.nextPosition];
+      const input = this.input[this.nextPosition];
+      if (!input) throw new Error("expected a value but got nothing");
+      this.currChar = input;
     }
     this.currPosition = this.nextPosition;
     this.nextPosition++;
+
+    this.updatePosition(this.currChar);
+  }
+
+  updatePosition(ch: string | null) {
+    if (ch === "\n") {
+      this.line++;
+      this.column = 0;
+    } else if (ch !== null) {
+      this.column++;
+    }
   }
 
   isLetter(ch: string | null): boolean {

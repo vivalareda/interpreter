@@ -5,7 +5,9 @@
     "rootDir": "./src",
     "strict": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "module": "Preserve",
+    "moduleResolution": "bundler"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.standalone.ts"]

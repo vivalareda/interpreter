@@ -1,8 +1,8 @@
 "use client";
 
-import { Environment, Eval, Lexer, Parser } from "@repo/interpreter-core";
+import { Environment, Eval, InterpreterError, Lexer, Parser, BUILTIN_FUCTIONS } from "@repo/interpreter-core";
 import { useCallback, useState } from "react";
-import { CodeEditor } from "./code-editor";
+import { CodeEditor, type Theme, themes } from "./code-editor";
 import styles from "./page.module.css";
 
 const EXAMPLES = [
@@ -24,7 +24,7 @@ const EXAMPLES = [
   },
   {
     label: "Tableaux",
-    code: "MET MOI CA ICITTE arr = [1, 2, 3, 4, 5];\nGAROCHE MOI CA(len(arr));\nGAROCHE MOI CA(first(arr));\nGAROCHE MOI CA(last(arr));",
+    code: "MET MOI CA ICITTE arr = [1, 2, 3, 4, 5];\nGAROCHE MOI CA(CEST LONG COMMENT(arr));\nGAROCHE MOI CA(arr[1]);\nGAROCHE MOI CA(BOUTE DU BOUTE(arr));",
   },
   {
     label: "Récursion",
@@ -39,6 +39,7 @@ export default function InterpreterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeExample, setActiveExample] = useState<number | null>(null);
+  const [theme, setTheme] = useState<Theme>("forest");
 
   const executeCode = useCallback(async () => {
     if (!code.trim()) return;
@@ -65,8 +66,8 @@ export default function InterpreterPage() {
 
         if (parser.errors.length > 0) {
           setError(
-            "Erreurs d\u2019analyse:\n" +
-              parser.errors.map((e) => `  ${e}`).join("\n"),
+            "Erreurs d'analyse:\n" +
+              parser.errors.map((e) => `  ${e.message}`).join("\n"),
           );
           console.log = originalLog;
           console.error = originalError;
@@ -85,7 +86,7 @@ export default function InterpreterPage() {
         console.log = originalLog;
         console.error = originalError;
         const message = err instanceof Error ? err.message : String(err);
-        setError(`Erreur d\u2019exécution: ${message}`);
+        setError(`Erreur d'exécution: ${message}`);
       }
     } finally {
       setIsLoading(false);
@@ -115,9 +116,21 @@ export default function InterpreterPage() {
     setActiveExample(null);
   };
 
+  const t = themes[theme];
+  const themeVars = {
+    "--bg-primary": t.bg,
+    "--bg-secondary": t.bgSurface,
+    "--bg-surface": t.bgSurface,
+    "--bg-surface-hover": t.bgElevated,
+    "--bg-elevated": t.bgElevated,
+    "--text-primary": t.text,
+    "--text-muted": t.textMuted,
+    "--accent": t.accent,
+    "--border": t.border,
+  } as React.CSSProperties;
+
   return (
-    <div className={styles.container}>
-      {/* Header */}
+    <div className={styles.container} style={themeVars}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <h1>
@@ -125,9 +138,19 @@ export default function InterpreterPage() {
           </h1>
           <p className={styles.headerSubtitle}>Playground</p>
         </div>
+        <div className={styles.themeToggle}>
+          {(["forest", "ocean", "light"] as Theme[]).map((t) => (
+            <button
+              key={t}
+              className={`${styles.themeButton} ${theme === t ? styles.themeButtonActive : ""}`}
+              onClick={() => setTheme(t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </header>
 
-      {/* Editor + Output */}
       <main className={styles.content}>
         <div className={styles.editorSection}>
           <div className={styles.sectionHeader}>
@@ -139,15 +162,11 @@ export default function InterpreterPage() {
             <label htmlFor="code-input">code</label>
           </div>
           <CodeEditor
-            id="code-input"
-            className={styles.editor}
             value={code}
             onChange={setCode}
             onKeyDown={handleKeyDown}
-            placeholder={`MET MOI CA ICITTE x = 5;\nGAROCHE MOI CA(x);`}
-            textareaClassName={styles.editorTextarea}
-            preClassName={styles.editorPre}
-            placeholderClassName={styles.editorPlaceholder}
+            className={styles.editor}
+            theme={theme}
           />
         </div>
 
@@ -173,7 +192,6 @@ export default function InterpreterPage() {
         </div>
       </main>
 
-      {/* Action bar */}
       <div className={styles.actionBar}>
         <div className={styles.buttonGroup}>
           <button
@@ -198,7 +216,6 @@ export default function InterpreterPage() {
         </button>
       </div>
 
-      {/* Examples */}
       <section className={styles.examples}>
         <p className={styles.examplesLabel}>Exemples</p>
         <div className={styles.exampleGrid}>
@@ -214,7 +231,6 @@ export default function InterpreterPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className={styles.pageFooter}>
         <p>
           Interpréteur Québecois &mdash; inspiré par le livre &ldquo;Writing an
@@ -222,7 +238,6 @@ export default function InterpreterPage() {
         </p>
       </footer>
 
-      {/* Syntax Reference Modal */}
       <div
         className={`${styles.modalOverlay} ${showModal ? styles.open : ""}`}
         onClick={(e) => {
@@ -303,6 +318,14 @@ SAUF UNE FOIS AU CHALET`}</code>
 GAROCHE MOI CA(x);`}</code>
             </pre>
 
+            <h3>Fonctions intégrées</h3>
+            <p>
+              <code>CEST LONG COMMENT(x)</code> — longueur d&apos;une chaîne ou tableau
+            </p>
+            <p>
+              <code>BOUTE DU BOUTE(arr)</code> — dernier élément d&apos;un tableau
+            </p>
+
             <h3>Opérateurs</h3>
             <p>
               Arithmétique : <code>+</code> <code>-</code> <code>*</code>{" "}
@@ -315,6 +338,14 @@ GAROCHE MOI CA(x);`}</code>
             <p>
               Logique : <code>!</code> (NOT)
             </p>
+
+            <h3>Commentaires</h3>
+            <p>
+              Utilisez <code>TYL</code> pour un commentaire sur une ligne :
+            </p>
+            <pre>
+              <code>TYL ceci est un commentaire</code>
+            </pre>
           </div>
         </div>
       </div>

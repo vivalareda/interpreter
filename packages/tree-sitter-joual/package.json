@@ -1,0 +1,16 @@
+{
+  "name": "tree-sitter-joual",
+  "version": "1.0.0",
+  "description": "Tree-sitter grammar for Joual",
+  "main": "bindings/node",
+  "keywords": ["parser", "tree-sitter"],
+  "dependencies": {
+    "nan": "*"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.qc",
+      "file-types": ["qc"]
+    }
+  ]
+}

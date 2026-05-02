@@ -1,5 +1,5 @@
-import type { Token } from "../../lexer/token.js";
-import type { Expression } from "../ast.js";
+import { type Token } from "../../lexer/token";
+import { type Expression } from "../ast";
 
 export class InfixExpression implements Expression {
   expressionNode = true as const;
@@ -8,7 +8,7 @@ export class InfixExpression implements Expression {
     public Token: Token,
     public Left: Expression,
     public Operator: string,
-    public Right: Expression
+    public Right: Expression,
   ) { }
 
   tokenLiteral() {

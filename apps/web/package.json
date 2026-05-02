@@ -12,22 +12,21 @@
   },
   "dependencies": {
     "@repo/interpreter-core": "*",
-<<<<<<< Updated upstream
+    "@codemirror/language": "^6.11.1",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.36.8",
+    "@codemirror/autocomplete": "^6.18.6",
+    "@codemirror/commands": "^6.8.1",
+    "@lezer/highlight": "^1.2.1",
+    "codemirror": "^6.0.2",
     "next": "16.0.10",
-=======
-    "@repo/ui": "*",
-    "next": "^16.0.1",
-    "prismjs": "^1.30.0",
->>>>>>> Stashed changes
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-simple-code-editor": "^0.14.1"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@types/node": "^22.15.3",
-    "@types/prismjs": "^1.26.6",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "eslint": "^9.39.1",

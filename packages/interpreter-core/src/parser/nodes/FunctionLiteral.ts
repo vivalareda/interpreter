@@ -1,7 +1,7 @@
-import type { Token } from "../../lexer/token.js";
-import type { Identifier } from "./Identifier.js";
-import type { BlockStatement } from "./IfExpression.js";
-import type { Expression } from "../ast.js";
+import type { Token } from "../../lexer/token";
+import type { Identifier } from "./Identifier";
+import type { BlockStatement } from "./IfExpression";
+import type { Expression } from "../ast";
 
 export class FunctionLiteral implements Expression {
   expressionNode = true as const;

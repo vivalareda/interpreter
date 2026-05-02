@@ -1,6 +1,6 @@
-import { type Token } from "../../lexer/token.js";
-import { type Expression, type Statement } from "../ast.js";
-import { type Identifier } from "./Identifier.js";
+import { type Token } from "../../lexer/token";
+import { type Expression, type Statement } from "../ast";
+import { type Identifier } from "./Identifier";
 
 export class LetStatement implements Statement {
   statementNode = true as const;
@@ -18,5 +18,4 @@ export class LetStatement implements Statement {
   toString() {
     return `${this.tokenLiteral()} ${this.Identifier.Name} = ${this.Value.toString()};`;
   }
-
 }

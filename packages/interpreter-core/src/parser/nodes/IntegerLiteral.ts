@@ -1,5 +1,5 @@
-import { type Token } from "../../lexer/token.js";
-import type { Expression } from "../ast.js";
+import type { Token } from "../../lexer/token";
+import type { Expression } from "../ast";
 
 export class IntegerLiteral implements Expression {
   expressionNode = true as const;
@@ -7,7 +7,7 @@ export class IntegerLiteral implements Expression {
   constructor(
     public Token: Token,
     public Value: number,
-  ) { };
+  ) { }
 
   tokenLiteral() {
     return this.Token.Literal;
