@@ -1,4 +1,5 @@
 export * from "./nodes/ArrayLiteral";
+export * from "./nodes/AssignationExpression";
 export * from "./nodes/ExpressionStatement";
 export * from "./nodes/Identifier";
 export * from "./nodes/LetStatement";

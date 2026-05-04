@@ -6,6 +6,7 @@ import {
   ReturnStatement,
 } from "./ast";
 import { LetStatement } from "./nodes/LetStatement";
+import { AssignmentStatement } from "./nodes/AssignationExpression";
 import { Identifier, PrefixExpression, Program } from "./ast";
 import { ArrayLiteral } from "./nodes/ArrayLiteral";
 import { BooleanLiteral } from "./nodes/BooleanExpression";
@@ -51,10 +52,19 @@ export type ParseError = {
   token: Token;
 };
 
+const EXISTENTIAL_WARNINGS = [
+  "je peux pas te garantir que ça va marcher",
+  "c'est ordinaire ton affaire",
+  "hi lala",
+  "on va essayer jte promets rien",
+  "j'ai vu mieux dans ma vie",
+];
+
 export class Parser {
   currToken: Token;
   peekToken: Token;
   errors: ParseError[] = [];
+  warnings: ParseError[] = [];
   prefixParseFn: Map<TokenType, PrefixParseFn> = new Map();
   infixParseFn: Map<TokenType, InfixParseFns> = new Map();
 
@@ -95,6 +105,7 @@ export class Parser {
     );
 
     this.registerInfixFn(TOKENS.LBRACKET, this.parseIndexExpression.bind(this));
+
     this.registerInfixFn(TOKENS.PLUS, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.MINUS, this.parseInfixExpression.bind(this));
     this.registerInfixFn(TOKENS.ASTERISK, this.parseInfixExpression.bind(this));
@@ -192,18 +203,6 @@ export class Parser {
     return elements;
   }
 
-  parseGroupedExpression() {
-    this.nextToken();
-
-    const exp = this.parseExpression(PRECEDENCE.LOWEST);
-
-    if (!this.expectPeekAndAdvance(TOKENS.RPAREN)) {
-      return null;
-    }
-
-    return exp;
-  }
-
   parseIfExpression() {
     const token = this.currToken;
 
@@ -243,16 +242,16 @@ export class Parser {
   parseFunctionParams() {
     let params: Identifier[] = [];
 
-    while (this.peekTokenIs(TOKENS.COMMA) || this.peekTokenIs(TOKENS.RPAREN)) {
-      const ident = new Identifier(this.currToken, this.currToken.Literal);
-      params.push(ident);
-
-      if (this.peekTokenIs(TOKENS.RPAREN)) {
+    while (!this.currTokenIs(TOKENS.RPAREN) && !this.currTokenIs(TOKENS.EOF)) {
+      let typeAnnotation: string | undefined;
+      const token = this.currToken;
+      if (this.peekTokenIs(TOKENS.COLON)) {
         this.nextToken();
-        return params;
+        this.nextToken();
+        typeAnnotation = this.currToken.Literal;
       }
-
-      this.nextToken();
+      params.push(new Identifier(token, token.Literal, typeAnnotation));
+      if (this.peekTokenIs(TOKENS.COMMA)) this.nextToken();
       this.nextToken();
     }
 
@@ -269,9 +268,28 @@ export class Parser {
     this.nextToken();
     const params = this.parseFunctionParams();
 
+    let returnType: string | undefined;
+    if (this.peekTokenIs(TOKENS.TYPE_ARROW)) {
+      this.nextToken();
+      this.nextToken();
+      returnType = this.currToken.Literal;
+    }
+
     const body = this.parseBlockStatement(TOKENS.FNEND);
 
-    return new FunctionLiteral(token, params, body);
+    return new FunctionLiteral(token, params, body, returnType);
+  }
+
+  parseGroupedExpression() {
+    this.nextToken();
+
+    const exp = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.expectPeekAndAdvance(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    return exp;
   }
 
   parseFunctionCallExpression(func: Expression) {
@@ -345,6 +363,20 @@ export class Parser {
     return new Identifier(this.currToken, this.currToken.Literal);
   }
 
+  parseAssignment(ident: Identifier) {
+    const token = this.currToken;
+
+    this.nextToken();
+
+    const value = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.expectPeekAndAdvance(TOKENS.SEMICOLON)) {
+      return null;
+    }
+
+    return new AssignmentStatement(token, ident, value);
+  }
+
   parseStatement() {
     switch (this.currToken.Type) {
       case "MET MOI CA ICITTE":
@@ -403,6 +435,14 @@ export class Parser {
 
     if (!stmt) {
       return null;
+    }
+
+    if (this.peekTokenIs(TOKENS.ASSIGN)) {
+      this.nextToken();
+      this.nextToken();
+      const value = this.parseExpression(PRECEDENCE.LOWEST);
+      if (!value) return null;
+      return new AssignmentStatement(token, stmt, value);
     }
 
     if (this.peekTokenIs(TOKENS.SEMICOLON)) {
@@ -479,5 +519,17 @@ export class Parser {
     }
 
     return program;
+  }
+
+  addWarning(token: Token) {
+    if (Math.random() < 0.25) {
+      this.warnings.push({
+        message:
+          EXISTENTIAL_WARNINGS[
+            Math.floor(Math.random() * EXISTENTIAL_WARNINGS.length)
+          ],
+        token,
+      });
+    }
   }
 }

@@ -23,7 +23,8 @@
   name: (identifier) @function
   value: (function_literal))
 
-(parameter_list (identifier) @variable.parameter)
+(parameter_list
+  (parameter name: (identifier) @variable.parameter))
 
 (call_expression
   function: (identifier) @function.call)
@@ -31,10 +32,13 @@
 (call_expression
   function: (builtin_keyword) @function.builtin)
 
+; Types
+(type) @type.builtin
+
 ; Operators
-["+" "-" "*" "/" "<" ">" "==" "!=" "!" "="] @operator
+["+" "-" "*" "/" "<" ">" "==" "!=" "!" "=" "->"] @operator
 
 ; Punctuation
 ["(" ")" "{" "}" "[" "]"] @punctuation.bracket
-[","] @punctuation.delimiter
+["," ":"] @punctuation.delimiter
 [";"] @punctuation.delimiter

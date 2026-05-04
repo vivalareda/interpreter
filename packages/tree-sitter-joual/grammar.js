@@ -20,7 +20,7 @@ module.exports = grammar({
       ),
 
     return_statement: ($) =>
-      seq("TOKEBEC", $._expression, optional(";")),
+      seq("TOKEBEC", $._expression, optional("")),
 
     print_keyword: ($) => "GAROCHE MOI CA",
 
@@ -28,7 +28,7 @@ module.exports = grammar({
       token(prec(1, choice(
         /CEST LONG COMMENT/,
         /BOUTE DU BOUTE/
-      ))),
+      )))),
 
     print_statement: ($) =>
       seq(
@@ -59,12 +59,18 @@ module.exports = grammar({
         "(",
         optional(field("parameters", $.parameter_list)),
         ")",
+        optional(seq("->", field("return_type", $.type))),
         field("body", repeat($._statement)),
         "SAUF UNE FOIS AU CHALET"
       ),
 
     parameter_list: ($) =>
-      seq($.identifier, repeat(seq(",", $.identifier))),
+      seq($.parameter, repeat(seq(",", $.parameter))),
+
+    parameter: ($) =>
+      seq(field("name", $.identifier), optional(seq(":", field("type", $.type)))),
+
+    type: ($) => choice("Int", "Bool", "String", "Array"),
 
     call_expression: ($) =>
       prec(

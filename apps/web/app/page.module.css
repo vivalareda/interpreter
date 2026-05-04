@@ -120,6 +120,38 @@
   background: var(--accent-muted);
 }
 
+/* ---- Gaz lighting toggle ---- */
+.gazToggle {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-sm);
+}
+
+.gazButton {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.gazButton:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.gazButtonActive {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
 /* ---- Main content area ---- */
 .content {
   flex: 1;

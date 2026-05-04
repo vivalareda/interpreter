@@ -5,15 +5,16 @@ export class ArrayLiteral implements Expression {
   expressionNode: true;
 
   constructor(
-    public token: Token,
+    public Token: Token,
     public elements: Expression[],
   ) {}
 
   tokenLiteral() {
-    return this.token.Literal;
+    return this.Token.Literal;
   }
 
   toString() {
     return this.elements.map((e) => e.toString()).join(", ");
   }
 }
+

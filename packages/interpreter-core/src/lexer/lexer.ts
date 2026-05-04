@@ -187,12 +187,23 @@ export class Lexer {
         };
         break;
       case "-":
-        token = {
-          Type: TOKENS.MINUS,
-          Literal: this.currChar,
-          Line: line,
-          Column: column,
-        };
+        if (this.peek() === ">") {
+          const literal = this.input[this.currPosition];
+          this.readChar();
+          token = {
+            Type: TOKENS.TYPE_ARROW,
+            Literal: literal + this.currChar,
+            Line: line,
+            Column: column,
+          };
+        } else {
+          token = {
+            Type: TOKENS.MINUS,
+            Literal: this.currChar,
+            Line: line,
+            Column: column,
+          };
+        }
         break;
       case null:
         token = { Type: TOKENS.EOF, Literal: "", Line: line, Column: column };
@@ -323,6 +334,14 @@ export class Lexer {
         value += ` ${nextWord}`;
       }
       return value;
+    } else if (ident === "BOUTE") {
+      let value = ident;
+      while (value !== "BOUTE DU BOUTE") {
+        const nextWord = this.readNextWord();
+        if (nextWord === "") return value;
+        value += ` ${nextWord}`;
+      }
+      return value;
     }
 
     return ident;
@@ -365,6 +384,14 @@ export class Lexer {
         return TOKENS.TRUE;
       case "false":
         return TOKENS.FALSE;
+      case "Int":
+        return TOKENS.TYPE_INT;
+      case "Bool":
+        return TOKENS.TYPE_BOOL;
+      case "String":
+        return TOKENS.TYPE_STRING;
+      case "Array":
+        return TOKENS.TYPE_ARRAY;
       default:
         return TOKENS.IDENT;
     }

@@ -337,6 +337,16 @@ describe("evaluator tests", () => {
         "Ca marche pas dmeme icitte",
       );
     });
+
+    test("array mutation", () => {
+      const input = `
+        MET MOI CA ICITTE x = [1, 2, 3];
+        x[2] = 4;
+        x[2];
+      `;
+      const evaluated = testEval(input);
+      testIntegerObject(evaluated, 4);
+    });
   });
 });
 

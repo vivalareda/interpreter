@@ -10,6 +10,7 @@ export class FunctionLiteral implements Expression {
     public Token: Token,
     public Params: Identifier[],
     public Body: BlockStatement,
+    public ReturnType?: string,
   ) { };
 
   tokenLiteral() {

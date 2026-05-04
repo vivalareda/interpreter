@@ -36,3 +36,6 @@ export { Array as InterpreterArray } from "./evaluator/objects/array";
 export { Error as InterpreterError } from "./evaluator/objects/error";
 export { Function } from "./evaluator/objects/function";
 export { Builtin, BUILTIN_FUCTIONS } from "./evaluator/objects/builtin";
+
+export { TypeChecker } from "./typechecker/typechecker";
+export { T_INT, T_BOOL, T_STRING, T_NULL, type Type } from "./typechecker/types";

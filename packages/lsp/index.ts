@@ -5,12 +5,16 @@ import {
   Lexer,
   Parser,
   type Token,
+  type Type,
+  TypeChecker,
 } from "@repo/interpreter-core";
+import { appendFileSync } from "fs";
 import type {
   Diagnostic,
   Message,
   NotificationTextDocumentDidChange,
   NotificationTextDocumentDidOpen,
+  RequestTextDocumentHover,
   SplitReturn,
   State,
 } from "./types";
@@ -21,6 +25,7 @@ const state: State = {
 };
 
 const registeredNurse = "\r\n\r\n";
+const gazLightingMode = true;
 
 function encodeMessage(rawMsg: unknown): string {
   const msg = JSON.stringify(rawMsg);
@@ -58,8 +63,6 @@ let buffer = "";
 let validateTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_MS = 250;
 
-import { appendFileSync } from "fs";
-
 function log(...args: unknown[]) {
   appendFileSync("/tmp/qc-lsp.log", args.join(" ") + "\n");
 }
@@ -84,6 +87,7 @@ process.stdin.on("data", (chunk: Buffer) => {
                   openClose: true,
                   change: 1,
                 },
+                hoverProvider: true,
               },
               serverInfo: {
                 name: "qc-lsp",
@@ -132,12 +136,94 @@ process.stdin.on("data", (chunk: Buffer) => {
           );
           break;
         }
+
+        case "textDocument/hover": {
+          const message = JSON.parse(
+            result.content,
+          ) as RequestTextDocumentHover;
+
+          const hover = getHover(
+            message.params.textDocument.uri,
+            message.params.position,
+          );
+
+          writeResponse({
+            jsonrpc: "2.0",
+            id: message.id,
+            result: hover,
+          });
+          break;
+        }
       }
+      //log(result.content);
     }
   } catch (e) {
     log("error:", e);
   }
 });
+
+function getHover(uri: string, position: { line: number; character: number }) {
+  const text = state.documents.get(uri);
+  if (!text) return null;
+
+  const word = wordAtPosition(text, position);
+  if (!word) return null;
+
+  const lexer = new Lexer(text);
+  const parser = new Parser(lexer);
+  const program = parser.parseProgram();
+
+  if (parser.errors.length > 0) return null;
+
+  const typeChecker = new TypeChecker();
+  typeChecker.check(program);
+
+  const type = typeChecker.getType(word);
+  if (!type) return null;
+
+  return {
+    contents: {
+      kind: "markdown",
+      value: `\`${word}\`: **${formatType(type)}**`,
+    },
+  };
+}
+
+function formatType(type: Type): string {
+  switch (type.tag) {
+    case "Array":
+      return `${formatType(type.elementType)}[]`;
+
+    case "Function":
+      return `(${type.paramTypes.map(formatType).join(", ")}) -> ${formatType(type.returnType)}`;
+
+    default:
+      return type.tag;
+  }
+}
+
+function wordAtPosition(
+  text: string,
+  position: { line: number; character: number },
+): string | null {
+  const lines = text.split(/\r?\n/);
+  const line = lines[position.line];
+  if (line === undefined) return null;
+
+  let start = position.character;
+  while (start > 0 && /[A-Za-z0-9_]/.test(line.charAt(start - 1))) {
+    start--;
+  }
+
+  let end = position.character;
+  while (end < line.length && /[A-Za-z0-9_]/.test(line.charAt(end))) {
+    end++;
+  }
+
+  if (start === end) return null;
+
+  return line.slice(start, end);
+}
 
 function writeResponse(msg: unknown) {
   const encoded = encodeMessage(msg);
@@ -166,7 +252,23 @@ function validate(uri: string, version?: number) {
     message: err.message,
   }));
 
+  const warnings = parser.warnings.map((w) => ({
+    range: tokenToRange(w.token),
+    severity: 2,
+    message: w.message,
+  }));
+
   if (parser.errors.length === 0) {
+    const typeChecker = new TypeChecker();
+    typeChecker.check(program);
+    for (const err of typeChecker.errors) {
+      diagnostics.push({
+        range: tokenToRange(err.Token),
+        severity: 1,
+        message: err.Message,
+      });
+    }
+
     const env = new Environment();
     const origLog = console.log;
     console.log = () => {};
@@ -186,7 +288,11 @@ function validate(uri: string, version?: number) {
     }
   }
 
-  publishDiagnostics(uri, diagnostics, version);
+  const publishedDiagnostics = gazLightingMode
+    ? [...diagnostics, ...warnings]
+    : diagnostics;
+
+  publishDiagnostics(uri, publishedDiagnostics, version);
 }
 
 function publishDiagnostics(
@@ -216,4 +322,3 @@ function tokenToRange(token: Token) {
     end: { line, character: startChar + token.Literal.length },
   };
 }
-

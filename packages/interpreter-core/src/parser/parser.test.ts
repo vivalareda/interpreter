@@ -8,6 +8,7 @@ import {
   PrefixExpression,
   ReturnStatement,
 } from "./ast";
+import { AssignmentStatement } from "./nodes/AssignationExpression";
 import { Parser } from "./parser";
 import { ArrayLiteral } from "./nodes/ArrayLiteral";
 import { BooleanLiteral } from "./nodes/BooleanExpression";
@@ -452,6 +453,23 @@ JAI JAMAIS TOUCHER A MES FILLES() SAUF UNE FOIS AU CHALET;
     testLiteralExpression(array.elements[0], 1);
     testInfixExpression(array.elements[1] as InfixExpression, 2, "*", 2);
     testInfixExpression(array.elements[2] as InfixExpression, 3, "+", 3);
+  });
+
+  describe("assignment", () => {
+    test("assignment", () => {
+      const input = `
+      MET MOI CA ICITTE x = 5;
+      x = 10;
+      `;
+
+      const lexer = new Lexer(input);
+      const parser = new Parser(lexer);
+      const program = parser.parseProgram();
+      checkParserErrors(parser);
+
+      expect(program.statements.length).toBe(2);
+      expect(program.statements[1]).toBeInstanceOf(AssignmentStatement);
+    });
   });
 });
 

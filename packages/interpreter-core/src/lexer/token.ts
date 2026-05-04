@@ -44,5 +44,12 @@ export const TOKENS = {
   COLON: ":",
   COMMENT: "TYL",
 
+  TYPE_ARROW: "->",
+  TYPE_INT: "Int",
+  TYPE_BOOL: "Bool",
+  TYPE_STRING: "String",
+  TYPE_ARRAY: "Array",
+  TYPE_VAR: "T",
+
   ILLEGAL: "ILLEGAL",
 } as const;

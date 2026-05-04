@@ -7,6 +7,7 @@ export class Identifier implements Expression {
   constructor(
     public Token: Token,
     public Name: string,
+    public typeAnnotation?: string,
   ) { }
 
   tokenLiteral() {

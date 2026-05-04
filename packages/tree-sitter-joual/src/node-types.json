@@ -267,6 +267,16 @@
             "named": true
           }
         ]
+      },
+      "return_type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type",
+            "named": true
+          }
+        ]
       }
     }
   },
@@ -663,6 +673,32 @@
     }
   },
   {
+    "type": "parameter",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "parameter_list",
     "named": true,
     "fields": {},
@@ -671,7 +707,7 @@
       "required": true,
       "types": [
         {
-          "type": "identifier",
+          "type": "parameter",
           "named": true
         }
       ]
@@ -897,6 +933,11 @@
     }
   },
   {
+    "type": "type",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "!",
     "named": false
   },
@@ -929,7 +970,15 @@
     "named": false
   },
   {
+    "type": "->",
+    "named": false
+  },
+  {
     "type": "/",
+    "named": false
+  },
+  {
+    "type": ":",
     "named": false
   },
   {
@@ -957,6 +1006,18 @@
     "named": false
   },
   {
+    "type": "Array",
+    "named": false
+  },
+  {
+    "type": "Bool",
+    "named": false
+  },
+  {
+    "type": "Int",
+    "named": false
+  },
+  {
     "type": "JAI JAMAIS TOUCHER A MES FILLES",
     "named": false
   },
@@ -970,6 +1031,10 @@
   },
   {
     "type": "SINON LA",
+    "named": false
+  },
+  {
+    "type": "String",
     "named": false
   },
   {

@@ -11,6 +11,7 @@ import {
   ReturnStatement,
   type Statement,
 } from "../parser/ast";
+import { AssignmentStatement } from "../parser/nodes/AssignationExpression";
 import { BooleanLiteral } from "../parser/nodes/BooleanExpression";
 import { FunctionCallExpression } from "../parser/nodes/CallExpression";
 import { FunctionLiteral } from "../parser/nodes/FunctionLiteral";
@@ -84,6 +85,32 @@ export function Eval(node: Node, env: Environment): Object {
       if (isError(val)) return val;
       env.set(node.Identifier.Name, val);
       return CONSTANT_OBJECTS.null;
+    }
+    case node instanceof AssignmentStatement: {
+      const value = Eval(node.Value, env);
+      if (isError(value)) return value;
+      if (node.Identifier instanceof Identifier) {
+        env.set(node.Identifier.Name, value);
+      } else if (node.Identifier instanceof IndexExpression) {
+        const index = Eval(node.Identifier.Index, env);
+        if (isError(index)) return index;
+        const array = Eval(node.Identifier.Left, env);
+        if (isError(array)) return array;
+        if (array.Type() !== OBJECTS.ARRAY_OBJ) {
+          return new Error(
+            `c'est pas un array ca mon chum: ${array.Type()}`,
+            node.Identifier.Token,
+          );
+        }
+        const arrayObj = array as Array;
+        arrayObj.Elements[(index as Integer).Value - 1] = value;
+      } else {
+        return new Error(
+          `tu t'es tu virer une brosse en fds? ${node.Identifier}`,
+          node.Token,
+        );
+      }
+      return value;
     }
     case node instanceof Identifier: {
       return evalIdentifier(node, env);

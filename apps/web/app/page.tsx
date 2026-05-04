@@ -7,6 +7,7 @@ import {
   InterpreterError,
   Lexer,
   Parser,
+  TypeChecker,
 } from "@repo/interpreter-core";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -82,7 +83,7 @@ TYL 11. Même type non-supporté
   },
 ] as const;
 
-function computeDiagnostics(code: string): EditorDiagnostic[] {
+function computeDiagnostics(code: string, gazLightingMode: boolean): EditorDiagnostic[] {
   if (!code.trim()) return [];
 
   try {
@@ -98,6 +99,17 @@ function computeDiagnostics(code: string): EditorDiagnostic[] {
     }));
 
     if (parser.errors.length === 0) {
+      const typeChecker = new TypeChecker();
+      typeChecker.check(program);
+      for (const err of typeChecker.errors) {
+        diagnostics.push({
+          line: err.Token.Line,
+          column: err.Token.Column,
+          length: err.Token.Literal.length,
+          message: err.Message,
+        });
+      }
+
       const env = new Environment();
       const origLog = console.log;
       const origError = console.error;
@@ -121,7 +133,16 @@ function computeDiagnostics(code: string): EditorDiagnostic[] {
       }
     }
 
-    return diagnostics;
+    const warnings: EditorDiagnostic[] = gazLightingMode
+      ? parser.warnings.map((w) => ({
+          line: w.token.Line,
+          column: w.token.Column,
+          length: w.token.Literal.length,
+          message: w.message,
+        }))
+      : [];
+
+    return [...diagnostics, ...warnings];
   } catch {
     return [];
   }
@@ -136,8 +157,12 @@ export default function InterpreterPage() {
   const [showErrorsModal, setShowErrorsModal] = useState(false);
   const [activeExample, setActiveExample] = useState<number | null>(null);
   const [theme, setTheme] = useState<Theme>("forest");
+  const [gazLightingMode, setGazLightingMode] = useState(true);
 
-  const diagnostics = useMemo(() => computeDiagnostics(code), [code]);
+  const diagnostics = useMemo(
+    () => computeDiagnostics(code, gazLightingMode),
+    [code, gazLightingMode],
+  );
 
   const executeCode = useCallback(async () => {
     if (!code.trim()) return;
@@ -252,6 +277,19 @@ export default function InterpreterPage() {
               {t}
             </button>
           ))}
+        </div>
+        <div className={styles.gazToggle}>
+          <button
+            className={`${styles.gazButton} ${gazLightingMode ? styles.gazButtonActive : ""}`}
+            onClick={() => setGazLightingMode((v) => !v)}
+            title={
+              gazLightingMode
+                ? "Mode gaz lighting activé — avertissements visibles"
+                : "Mode gaz lighting désactivé — avertissements masqués"
+            }
+          >
+            {gazLightingMode ? "Gaz lighting ON" : "Gaz lighting OFF"}
+          </button>
         </div>
       </header>
 

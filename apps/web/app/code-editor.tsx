@@ -2,16 +2,17 @@
 
 import { useRef, useEffect } from "react";
 import { EditorState } from "@codemirror/state";
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, hoverTooltip } from "@codemirror/view";
 import { StreamLanguage, syntaxHighlighting, defaultHighlightStyle, HighlightStyle, indentOnInput, foldGutter, bracketMatching } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { linter, forceLinting, type Diagnostic as CMDiagnostic } from "@codemirror/lint";
+import { Lexer, Parser, TypeChecker, type Type } from "@repo/interpreter-core";
 
 type Theme = "forest" | "ocean" | "light";
 
-const themes: Record<Theme, { keyword: string; string: string; number: string; bool: string; comment: string; operator: string; punctuation: string; variable: string; function: string; bg: string; bgSurface: string; bgElevated: string; text: string; textMuted: string; accent: string; border: string; selection: string; }> = {
+const themes: Record<Theme, { keyword: string; string: string; number: string; bool: string; comment: string; operator: string; punctuation: string; variable: string; function: string; type: string; bg: string; bgSurface: string; bgElevated: string; text: string; textMuted: string; accent: string; border: string; selection: string; }> = {
   forest: {
     keyword: "#d4a043",
     string: "#9fd0ff",
@@ -22,6 +23,7 @@ const themes: Record<Theme, { keyword: string; string: string; number: string; b
     punctuation: "#d7d2c7",
     variable: "#e8e4dd",
     function: "#84c59a",
+    type: "#cba6f7",
     bg: "#0c110e",
     bgSurface: "#1a221c",
     bgElevated: "#242f27",
@@ -41,6 +43,7 @@ const themes: Record<Theme, { keyword: string; string: string; number: string; b
     punctuation: "#c9d1d9",
     variable: "#e6edf3",
     function: "#d2a8ff",
+    type: "#ffa657",
     bg: "#0d1117",
     bgSurface: "#161b22",
     bgElevated: "#21262d",
@@ -60,6 +63,7 @@ const themes: Record<Theme, { keyword: string; string: string; number: string; b
     punctuation: "#24292e",
     variable: "#24292e",
     function: "#6f42c1",
+    type: "#22863a",
     bg: "#ffffff",
     bgSurface: "#f6f8fa",
     bgElevated: "#eaecef",
@@ -84,6 +88,7 @@ function createHighlightStyle(theme: Theme) {
     { tag: tags.variableName, color: t.variable },
     { tag: tags.function(tags.variableName), color: t.function },
     { tag: tags.function(tags.name), color: t.function },
+    { tag: tags.typeName, color: t.type },
   ]);
 }
 
@@ -159,18 +164,78 @@ function createEditorTheme(theme: Theme) {
     ".cm-panel.cm-panel-lint ul li:hover": {
       backgroundColor: t.bgElevated,
     },
+    ".cm-joual-hover": {
+      padding: "4px 10px",
+      fontFamily: "'JetBrains Mono', 'Menlo', monospace",
+      fontSize: "0.8rem",
+      color: t.text,
+    },
+    ".cm-tooltip": {
+      backgroundColor: t.bgElevated,
+      border: `1px solid ${t.border}`,
+      borderRadius: "6px",
+      boxShadow: `0 4px 12px rgba(0,0,0,0.3)`,
+    },
   });
 }
 
-const joualLanguage = StreamLanguage.define({
+function formatType(type: Type): string {
+  switch (type.tag) {
+    case "Array":
+      return `${formatType(type.elementType)}[]`;
+    case "Function":
+      return `(${type.paramTypes.map(formatType).join(", ")}) -> ${formatType(type.returnType)}`;
+    default:
+      return type.tag;
+  }
+}
+
+const joualHover = hoverTooltip((view, pos) => {
+  const text = view.state.doc.toString();
+  let start = pos;
+  let end = pos;
+  while (start > 0 && /[A-Za-z0-9_]/.test(text[start - 1])) start--;
+  while (end < text.length && /[A-Za-z0-9_]/.test(text[end])) end++;
+  if (start === end) return null;
+  const word = text.slice(start, end);
+
+  try {
+    const lexer = new Lexer(text);
+    const parser = new Parser(lexer);
+    const program = parser.parseProgram();
+    if (parser.errors.length > 0) return null;
+
+    const typeChecker = new TypeChecker();
+    typeChecker.check(program);
+    const type = typeChecker.getType(word);
+    if (!type) return null;
+
+    return {
+      pos: start,
+      end,
+      above: true,
+      create() {
+        const dom = document.createElement("div");
+        dom.className = "cm-joual-hover";
+        dom.textContent = `${word}: ${formatType(type)}`;
+        return { dom };
+      },
+    };
+  } catch {
+    return null;
+  }
+});
+
+const joualLanguage = StreamLanguage.define<{ expectType: boolean }>({
   name: "joual",
   tokenTable: {
     function: tags.function(tags.name),
+    typeName: tags.typeName,
   },
   startState() {
-    return {};
+    return { expectType: false };
   },
-  token(stream, _state) {
+  token(stream, state) {
     if (stream.eatSpace()) return null;
 
     const remaining = stream.string.slice(stream.pos);
@@ -237,8 +302,9 @@ const joualLanguage = StreamLanguage.define({
       return "number";
     }
 
-    if (remaining.startsWith("==") || remaining.startsWith("!=")) {
+    if (remaining.startsWith("==") || remaining.startsWith("!=") || remaining.startsWith("->")) {
       stream.pos += 2;
+      if (remaining.startsWith("->")) state.expectType = true;
       return "operator";
     }
 
@@ -247,15 +313,24 @@ const joualLanguage = StreamLanguage.define({
       return "operator";
     }
 
-    if (/^[()[\]{};,:]/.test(remaining[0])) {
+    if (remaining[0] === ":") {
+      stream.next();
+      state.expectType = true;
+      return "punctuation";
+    }
+
+    if (/^[()[\]{};,]/.test(remaining[0])) {
       stream.next();
       return "punctuation";
     }
 
     if (/^\w/.test(remaining)) {
-      const start = stream.pos;
       stream.match(/^\w+/);
-      const word = stream.string.slice(start, stream.pos);
+
+      if (state.expectType) {
+        state.expectType = false;
+        return "typeName";
+      }
 
       // Check if this identifier is followed by '(' (function call)
       let pos = stream.pos;
@@ -333,6 +408,7 @@ export function CodeEditor({
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         editorTheme,
         linter(() => diagnosticsRef.current),
+        joualHover,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());

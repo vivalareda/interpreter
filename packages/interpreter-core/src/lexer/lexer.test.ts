@@ -126,4 +126,100 @@ SAUF UNE FOIS AU CHALET
       expect(token.Literal).toBe(test.expectedLiteral);
     }
   });
+
+  it("should lex type correctly", () => {
+    const input = `
+    MET MOI CA ICITTE add = JAI JAMAIS TOUCHER A MES FILLES(a: Int, b: Int) -> Int
+      TOKEBEC a + b;
+    SAUF UNE FOIS AU CHALET
+    `;
+
+    const lexer = new Lexer(input);
+
+    const tests = [
+      {
+        expectedType: TOKENS.DECLARATION,
+        expectedLiteral: "MET MOI CA ICITTE",
+      },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "add" },
+      { expectedType: TOKENS.ASSIGN, expectedLiteral: "=" },
+      {
+        expectedType: TOKENS.FNSTART,
+        expectedLiteral: "JAI JAMAIS TOUCHER A MES FILLES",
+      },
+      { expectedType: TOKENS.LPAREN, expectedLiteral: "(" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "a" },
+      { expectedType: TOKENS.COLON, expectedLiteral: ":" },
+      { expectedType: TOKENS.TYPE_INT, expectedLiteral: "Int" },
+      { expectedType: TOKENS.COMMA, expectedLiteral: "," },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "b" },
+      { expectedType: TOKENS.COLON, expectedLiteral: ":" },
+      { expectedType: TOKENS.TYPE_INT, expectedLiteral: "Int" },
+      { expectedType: TOKENS.RPAREN, expectedLiteral: ")" },
+      { expectedType: TOKENS.TYPE_ARROW, expectedLiteral: "->" },
+      { expectedType: TOKENS.TYPE_INT, expectedLiteral: "Int" },
+      { expectedType: TOKENS.RETURN, expectedLiteral: "TOKEBEC" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "a" },
+      { expectedType: TOKENS.PLUS, expectedLiteral: "+" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "b" },
+      { expectedType: TOKENS.SEMICOLON, expectedLiteral: ";" },
+      {
+        expectedType: TOKENS.FNEND,
+        expectedLiteral: "SAUF UNE FOIS AU CHALET",
+      },
+    ];
+
+    for (const test of tests) {
+      const token = lexer.nextToken();
+      expect(token.Type).toBe(test.expectedType as TokenType);
+      expect(token.Literal).toBe(test.expectedLiteral);
+    }
+  });
+
+  it("should lex generics correctly", () => {
+    const input = `MET MOI CA ICITTE gen = JAI JAMAIS TOUCHER A MES FILLES(a: T, b: T) -> T
+      TOKEBEC a + b;
+    SAUF UNE FOIS AU CHALET;`;
+
+    const lexer = new Lexer(input);
+
+    const tests = [
+      {
+        expectedType: TOKENS.DECLARATION,
+        expectedLiteral: "MET MOI CA ICITTE",
+      },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "gen" },
+      { expectedType: TOKENS.ASSIGN, expectedLiteral: "=" },
+      {
+        expectedType: TOKENS.FNSTART,
+        expectedLiteral: "JAI JAMAIS TOUCHER A MES FILLES",
+      },
+      { expectedType: TOKENS.LPAREN, expectedLiteral: "(" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "a" },
+      { expectedType: TOKENS.COLON, expectedLiteral: ":" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "T" },
+      { expectedType: TOKENS.COMMA, expectedLiteral: "," },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "b" },
+      { expectedType: TOKENS.COLON, expectedLiteral: ":" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "T" },
+      { expectedType: TOKENS.RPAREN, expectedLiteral: ")" },
+      { expectedType: TOKENS.TYPE_ARROW, expectedLiteral: "->" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "T" },
+      { expectedType: TOKENS.RETURN, expectedLiteral: "TOKEBEC" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "a" },
+      { expectedType: TOKENS.PLUS, expectedLiteral: "+" },
+      { expectedType: TOKENS.IDENT, expectedLiteral: "b" },
+      { expectedType: TOKENS.SEMICOLON, expectedLiteral: ";" },
+      {
+        expectedType: TOKENS.FNEND,
+        expectedLiteral: "SAUF UNE FOIS AU CHALET",
+      },
+    ];
+
+    for (const test of tests) {
+      const token = lexer.nextToken();
+      expect(token.Type).toBe(test.expectedType as TokenType);
+      expect(token.Literal).toBe(test.expectedLiteral);
+    }
+  });
 });
