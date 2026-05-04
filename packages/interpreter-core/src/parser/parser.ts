@@ -1,14 +1,8 @@
 import type { Lexer } from "../lexer/lexer";
 import { TOKENS, type Token, type TokenType } from "../lexer/token";
-import {
-  type Expression,
-  ExpressionStatement,
-  ReturnStatement,
-} from "./ast";
-import { LetStatement } from "./nodes/LetStatement";
-import { AssignmentStatement } from "./nodes/AssignationExpression";
-import { Identifier, PrefixExpression, Program } from "./ast";
+import { type Expression, ExpressionStatement, Identifier, PrefixExpression, Program, ReturnStatement } from "./ast";
 import { ArrayLiteral } from "./nodes/ArrayLiteral";
+import { AssignmentStatement } from "./nodes/AssignationExpression";
 import { BooleanLiteral } from "./nodes/BooleanExpression";
 import { FunctionCallExpression } from "./nodes/CallExpression";
 import { FunctionLiteral } from "./nodes/FunctionLiteral";
@@ -16,6 +10,7 @@ import { BlockStatement, IfExpression } from "./nodes/IfExpression";
 import { IndexExpression } from "./nodes/IndexExpression";
 import { InfixExpression } from "./nodes/InfixExpression";
 import { IntegerLiteral } from "./nodes/IntegerLiteral";
+import { LetStatement } from "./nodes/LetStatement";
 import { StringLiteral } from "./nodes/StringLiteral";
 
 export type PrefixParseFn = () => Expression;
@@ -378,6 +373,7 @@ export class Parser {
   }
 
   parseStatement() {
+    this.addWarning(this.currToken);
     switch (this.currToken.Type) {
       case "MET MOI CA ICITTE":
         return this.parseDeclaration();
@@ -533,3 +529,4 @@ export class Parser {
     }
   }
 }
+
